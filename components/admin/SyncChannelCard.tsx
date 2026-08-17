@@ -5,7 +5,6 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import {
   RefreshCw,
   Video,
-  Settings,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -33,13 +32,10 @@ export function SyncChannelCard({
   onSyncComplete?: () => void;
 }) {
   const [meta, setMeta] = useState<SyncMeta | null>(null);
-  const [target, setTarget] = useState("");
   const [channelTitle, setChannelTitle] = useState("");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
-  const [showConfigModal, setShowConfigModal] = useState(false);
-  const [targetInput, setTargetInput] = useState("");
 
   const fetchStatus = async () => {
     try {
@@ -47,8 +43,6 @@ export function SyncChannelCard({
       if (res.ok) {
         const data = await res.json();
         setMeta(data.meta);
-        setTarget(data.target || "");
-        setTargetInput(data.target || "");
         setChannelTitle(data.channelTitle || data.meta?.channelTitle || "");
       }
     } catch (e) {
@@ -62,16 +56,14 @@ export function SyncChannelCard({
     fetchStatus();
   }, []);
 
-  const handleSync = async (customTargetInput?: string) => {
+  const handleSync = async () => {
     setSyncing(true);
     setMessage(null);
 
     try {
-      const payload = customTargetInput ? { target: customTargetInput } : target ? { target } : {};
       const res = await fetch("/api/admin/sync-channel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -89,19 +81,12 @@ export function SyncChannelCard({
       if (onSyncComplete) onSyncComplete();
     } catch (err: any) {
       setMessage({
-        text: err?.message || "同步失敗，請確認頻道設定與 API 金鑰",
+        text: err?.message || "同步失敗，請確認 API 金鑰或網路狀態",
         type: "error",
       });
     } finally {
       setSyncing(false);
     }
-  };
-
-  const handleSaveConfigAndSync = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!targetInput.trim()) return;
-    setShowConfigModal(false);
-    await handleSync(targetInput.trim());
   };
 
   const formatLastSync = (dateStr?: string) => {
@@ -136,75 +121,13 @@ export function SyncChannelCard({
         {/* 立即同步按鈕 */}
         <button
           type="button"
-          onClick={() => handleSync()}
+          onClick={handleSync}
           disabled={syncing}
           className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs sm:text-sm shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
           <span>{syncing ? "同步中..." : "同步頻道"}</span>
         </button>
-
-        {/* 設定頻道按鈕 */}
-        <button
-          type="button"
-          onClick={() => setShowConfigModal(true)}
-          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-          title="設定同步頻道或播放清單"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
-
-        {/* 頻道設定 Modal */}
-        {showConfigModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-            <div className="w-full max-w-md glass-panel p-6 rounded-2xl border border-white/10 shadow-2xl space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
-                  <Video className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-white">設定 YouTube 同步頻道</h3>
-                  <p className="text-xs text-zinc-400">輸入頻道 ID、代稱或播放清單網址</p>
-                </div>
-              </div>
-
-              <form onSubmit={handleSaveConfigAndSync} className="space-y-4 pt-2">
-                <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                    頻道網址 / 頻道 ID / 播放清單網址 / @代稱
-                  </label>
-                  <input
-                    type="text"
-                    value={targetInput}
-                    onChange={(e) => setTargetInput(e.target.value)}
-                    placeholder="例如: @YourChannel 或 UC... 或 PL..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-500/50"
-                    required
-                  />
-                  <p className="text-[11px] text-zinc-500 mt-1">
-                    系統將自動解析並在儲存後立即執行首次全量同步。
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowConfigModal(false)}
-                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-medium transition-colors cursor-pointer"
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-semibold shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
-                  >
-                    儲存並立即同步
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -231,15 +154,6 @@ export function SyncChannelCard({
             </p>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setShowConfigModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-200 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors cursor-pointer"
-        >
-          <Settings className="w-3.5 h-3.5" />
-          <span>指定其他頻道/播放清單 (選填)</span>
-        </button>
       </div>
 
       {/* 同步狀態訊息提示 */}
@@ -264,7 +178,7 @@ export function SyncChannelCard({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
           <div className="text-[11px] text-zinc-500 mb-1 flex items-center gap-1">
-            <Clock className="w-3 h-3 text-amber-400" />
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
             <span>上次同步時間</span>
           </div>
           <div className="text-xs font-mono text-zinc-200">
@@ -274,7 +188,7 @@ export function SyncChannelCard({
 
         <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
           <div className="text-[11px] text-zinc-500 mb-1 flex items-center gap-1">
-            <Film className="w-3 h-3 text-amber-400" />
+            <Film className="w-3.5 h-3.5 text-amber-400" />
             <span>頻道收錄影片總數</span>
           </div>
           <div className="text-sm font-semibold text-zinc-100">
@@ -284,7 +198,7 @@ export function SyncChannelCard({
 
         <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
           <div className="text-[11px] text-zinc-500 mb-1 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-emerald-400" />
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
             <span>上次同步異動</span>
           </div>
           <div className="text-xs text-zinc-300">
@@ -304,13 +218,13 @@ export function SyncChannelCard({
         <div className="text-xs text-zinc-400">
           目標頻道：
           <span className="font-medium text-amber-300">
-            {channelTitle ? `${channelTitle} (自動綁定)` : target ? target : "自動讀取管理員之 YouTube 頻道 (mine: true)"}
+            {channelTitle ? `${channelTitle} (自動綁定)` : "自動讀取 YouTube 頻道 API"}
           </span>
         </div>
 
         <button
           type="button"
-          onClick={() => handleSync()}
+          onClick={handleSync}
           disabled={syncing}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
@@ -318,58 +232,6 @@ export function SyncChannelCard({
           <span>{syncing ? "正在同步全頻道影片..." : "立即同步全頻道影片"}</span>
         </button>
       </div>
-
-      {/* 頻道設定 Modal */}
-      {showConfigModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-md glass-panel p-6 rounded-2xl border border-white/10 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
-                <Video className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-white">設定 YouTube 同步頻道</h3>
-                <p className="text-xs text-zinc-400">輸入頻道 ID、代稱或播放清單網址</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSaveConfigAndSync} className="space-y-4 pt-2">
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                  頻道網址 / 頻道 ID / 播放清單網址 / @代稱
-                </label>
-                <input
-                  type="text"
-                  value={targetInput}
-                  onChange={(e) => setTargetInput(e.target.value)}
-                  placeholder="例如: @YourChannel 或 UC... 或 PL..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-500/50"
-                  required
-                />
-                <p className="text-[11px] text-zinc-500 mt-1">
-                  支援格式：`@頻道名稱`、`UCxxxxxxxx`、`https://www.youtube.com/@Channel` 或 `https://www.youtube.com/playlist?list=PL...`
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowConfigModal(false)}
-                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-medium transition-colors cursor-pointer"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-semibold shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
-                >
-                  儲存並立即同步
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </GlassCard>
   );
 }
