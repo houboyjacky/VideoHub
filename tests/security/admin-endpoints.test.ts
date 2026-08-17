@@ -88,6 +88,15 @@ describe("後台 API 全路徑未授權防護真機測試 (Security: Admin API E
     assert.equal(res.status, 403);
   });
 
+  test("PUT /api/admin/groups/[id] 未授權應回傳 403", async () => {
+    const res = await fetch(`${BASE_URL}/api/admin/groups/${dummyId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Updated Group" }),
+    });
+    assert.ok([403, 405].includes(res.status), `預期回傳 403 或 405，實際收到 ${res.status}`);
+  });
+
   test("DELETE /api/admin/groups/[id] 未授權應回傳 403", async () => {
     const res = await fetch(`${BASE_URL}/api/admin/groups/${dummyId}`, {
       method: "DELETE",

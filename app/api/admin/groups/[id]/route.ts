@@ -2,6 +2,40 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const check = await requireAdmin();
+  if (!check.authorized) return check.response;
+
+  try {
+    const { id: groupId } = await params;
+    const body = await req.json();
+    const { name, description } = body;
+
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return NextResponse.json({ error: "分組名稱不得為空" }, { status: 400 });
+    }
+
+    const updatedGroup = await prisma.group.update({
+      where: { id: groupId },
+      data: {
+        name: name.trim(),
+        description: description !== undefined ? description?.trim() || null : undefined,
+      },
+    });
+
+    return NextResponse.json({ success: true, group: updatedGroup });
+  } catch (error: any) {
+    console.error("[Admin Group PUT Error]:", error);
+    return NextResponse.json(
+      { error: error?.message || "更新分組名稱失敗" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }

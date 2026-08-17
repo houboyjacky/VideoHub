@@ -29,6 +29,7 @@ import {
   FolderPlus,
   FolderMinus,
   CheckCheck,
+  ArrowUpDown,
 } from "lucide-react";
 
 interface VideoItem {
@@ -56,8 +57,11 @@ export default function AdminVideosPage() {
   const [groups, setGroups] = useState<GroupItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 版面樣式：預設為「左圖 右描述」橫式清單 (list)，亦支援切換為網格 (grid)
-  const [layoutMode, setLayoutMode] = useState<"list" | "grid">("list");
+  // 版面樣式：預設為網格圖卡 (grid)，亦支援切換為橫式清單 (list)
+  const [layoutMode, setLayoutMode] = useState<"list" | "grid">("grid");
+
+  // 排序模式：預設為「由新到舊」(desc)，可切換為「由舊到新」(asc)
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
   // 篩選與搜尋狀態
   const [filterPrivacy, setFilterPrivacy] = useState<string>("all");
@@ -74,6 +78,11 @@ export default function AdminVideosPage() {
   const [batchTargetGroupIds, setBatchTargetGroupIds] = useState<string[]>([]);
   const [batchMode, setBatchMode] = useState<"set" | "add">("set");
   const [batchSubmitting, setBatchSubmitting] = useState(false);
+
+  // 批次彈窗內快速新增分組狀態
+  const [showInlineAddGroup, setShowInlineAddGroup] = useState(false);
+  const [inlineNewGroupName, setInlineNewGroupName] = useState("");
+  const [creatingInlineGroup, setCreatingInlineGroup] = useState(false);
 
   // 新增影片狀態
   const [showAddModal, setShowAddModal] = useState(false);
@@ -161,7 +170,7 @@ export default function AdminVideosPage() {
 
   // 4. 多重交集篩選後的影片清單
   const filteredVideos = useMemo(() => {
-    return videos.filter((v) => {
+    const list = videos.filter((v) => {
       // 隱私狀態篩選
       if (filterPrivacy !== "all") {
         const p = v.ytPrivacyStatus || "unlisted";
@@ -195,7 +204,14 @@ export default function AdminVideosPage() {
 
       return true;
     });
-  }, [videos, filterPrivacy, filterYear, filterGroup, searchQuery]);
+
+    // 排序：預設由新到舊 (desc)，亦支援切換為由舊到新 (asc)
+    return [...list].sort((a, b) => {
+      const timeA = new Date(a.shootingDate || a.publishedAt || 0).getTime();
+      const timeB = new Date(b.shootingDate || b.publishedAt || 0).getTime();
+      return sortOrder === "desc" ? timeB - timeA : timeA - timeB;
+    });
+  }, [videos, filterPrivacy, filterYear, filterGroup, searchQuery, sortOrder]);
 
   // 5. 目前分頁可視的影片
   const displayedVideos = useMemo(() => {
@@ -296,6 +312,44 @@ export default function AdminVideosPage() {
       if (err instanceof Error) setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 批次彈窗內快速建立新分組
+  const handleInlineCreateGroup = async () => {
+    if (!inlineNewGroupName.trim()) return;
+    try {
+      setCreatingInlineGroup(true);
+      setError(null);
+
+      const res = await fetch("/api/admin/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: inlineNewGroupName.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "建立分組失敗");
+
+      // 重新載入分組清單
+      const resGroups = await fetch("/api/admin/groups");
+      if (resGroups.ok) {
+        const dataGroups = await resGroups.json();
+        setGroups(dataGroups.groups || []);
+      }
+
+      // 自動將新建立的分組勾選進 batchTargetGroupIds
+      if (data.group?.id) {
+        setBatchTargetGroupIds((prev) => [...prev, data.group.id]);
+      }
+
+      setInlineNewGroupName("");
+      setShowInlineAddGroup(false);
+      setSuccess(`成功建立並選取新分組「${inlineNewGroupName.trim()}」！`);
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+    } finally {
+      setCreatingInlineGroup(false);
     }
   };
 
@@ -455,6 +509,21 @@ export default function AdminVideosPage() {
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end text-xs text-zinc-400">
+            {/* 排序切換按鈕 (由新到舊 / 由舊到新) */}
+            <button
+              type="button"
+              onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white transition-all text-xs font-medium cursor-pointer"
+              title={
+                sortOrder === "desc"
+                  ? "目前為「由新到舊 (最新優先)」，點擊切換為「由舊到新」"
+                  : "目前為「由舊到新 (最早優先)」，點擊切換為「由新到舊」"
+              }
+            >
+              <ArrowUpDown className="w-3.5 h-3.5 text-amber-400" />
+              <span>{sortOrder === "desc" ? "📅 由新到舊" : "📅 由舊到新"}</span>
+            </button>
+
             {/* 版面切換按鈕 */}
             <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10">
               <button
@@ -1192,13 +1261,58 @@ export default function AdminVideosPage() {
 
             {/* 群組勾選清單 */}
             <div className="space-y-3">
-              <label className="text-xs font-semibold text-zinc-300">
-                請選擇目標分組（多選）
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-zinc-300">
+                  請選擇目標分組（多選）
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowInlineAddGroup(!showInlineAddGroup)}
+                  className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{showInlineAddGroup ? "收起" : "＋ 新增分類"}</span>
+                </button>
+              </div>
+
+              {/* 快速新增分類輸入框 */}
+              {showInlineAddGroup && (
+                <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/30 space-y-2 animate-fade-in">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="輸入新分組名稱 (例如: 高中同學)"
+                      value={inlineNewGroupName}
+                      onChange={(e) => setInlineNewGroupName(e.target.value)}
+                      className="flex-1 px-3 py-1.5 rounded-lg bg-black/50 border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-500/50"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleInlineCreateGroup();
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={handleInlineCreateGroup}
+                      disabled={creatingInlineGroup || !inlineNewGroupName.trim()}
+                      className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs transition-colors flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                    >
+                      {creatingInlineGroup ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Plus className="w-3 h-3" />
+                      )}
+                      <span>建立</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {groups.length === 0 ? (
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
-                  目前尚未建立任何自訂群組。請先至「分組管理」新增群組！
+                  目前尚未建立任何自訂群組。可點擊上方「＋ 新增分類」立即新增！
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">

@@ -2,7 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { Layers, Plus, Trash2, Loader2, Video, Users, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  Layers,
+  Plus,
+  Trash2,
+  Edit2,
+  Loader2,
+  Video,
+  Users,
+  AlertCircle,
+  CheckCircle2,
+  X,
+  Check,
+} from "lucide-react";
 
 interface GroupData {
   id: string;
@@ -19,10 +31,17 @@ export default function AdminGroupsPage() {
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // 新增分組狀態
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // 編輯分組狀態
+  const [editingGroup, setEditingGroup] = useState<GroupData | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchGroups = async () => {
     try {
@@ -68,6 +87,41 @@ export default function AdminGroupsPage() {
       if (err instanceof Error) setError(err.message);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleOpenEdit = (group: GroupData) => {
+    setEditingGroup(group);
+    setEditName(group.name);
+    setEditDesc(group.description || "");
+    setError(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGroup || !editName.trim()) return;
+
+    try {
+      setSavingEdit(true);
+      setError(null);
+      setSuccess(null);
+
+      const res = await fetch(`/api/admin/groups/${editingGroup.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim(), description: editDesc.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "更新分組失敗");
+
+      setSuccess(`已成功更新分組「${editName}」！`);
+      setEditingGroup(null);
+      fetchGroups();
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -200,19 +254,30 @@ export default function AdminGroupsPage() {
                     <h3 className="text-base font-semibold text-white tracking-tight">
                       {group.name}
                     </h3>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(group.id, group.name)}
-                      disabled={deletingId === group.id}
-                      className="p-1.5 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-                      title="刪除分組"
-                    >
-                      {deletingId === group.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-red-400" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(group)}
+                        className="p-1.5 text-zinc-400 hover:text-amber-300 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                        title="修改分組名稱與說明"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(group.id, group.name)}
+                        disabled={deletingId === group.id}
+                        className="p-1.5 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                        title="刪除分組"
+                      >
+                        {deletingId === group.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-red-400" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   {group.description && (
                     <p className="text-xs text-zinc-400 line-clamp-2">
@@ -236,6 +301,91 @@ export default function AdminGroupsPage() {
           </div>
         )}
       </GlassCard>
+
+      {/* 編輯分組彈窗 Modal */}
+      {editingGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md glass-panel p-6 rounded-2xl border border-white/10 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">修改分組資訊</h3>
+                  <p className="text-xs text-zinc-400">更新分組名稱或備註說明</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingGroup(null)}
+                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-zinc-300">
+                  分組名稱 <span className="text-amber-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="輸入新的分組名稱"
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white"
+                  disabled={savingEdit}
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-zinc-300">
+                  備註說明 (選填)
+                </label>
+                <input
+                  type="text"
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  placeholder="例如：僅供老朋友觀看的聚會紀錄"
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white"
+                  disabled={savingEdit}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setEditingGroup(null)}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-medium transition-colors cursor-pointer"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit || !editName.trim()}
+                  className="px-5 py-2 rounded-xl glass-btn-primary text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-amber-500/20 disabled:opacity-50 cursor-pointer"
+                >
+                  {savingEdit ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>儲存中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>儲存變更</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
