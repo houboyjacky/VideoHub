@@ -163,6 +163,13 @@ describe("全頁面路由權限攔截與跳轉矩陣測試 (Security: Proxy Rout
         destination: "/",
       });
     });
+
+    test("管理後台活動日誌 (/admin/logs) 應重導向至首頁 (/)", () => {
+      assert.deepEqual(evaluateRouteAccess("/admin/logs", guest), {
+        action: "redirect",
+        destination: "/",
+      });
+    });
   });
 
   describe("角色二：已登入未註冊訪客 (Unregistered User)", () => {

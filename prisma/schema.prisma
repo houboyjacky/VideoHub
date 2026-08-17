@@ -62,3 +62,22 @@ model InviteCode {
 
   @@map("invite_codes")
 }
+
+model ActivityLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?  @db.ObjectId
+  email     String
+  name      String?
+  image     String?
+  action    String   // login | logout | register | approve | reject
+  status    String   @default("success") // success | failed
+  os        String?  // Windows 11, macOS, iOS, Android, Linux
+  browser   String?  // Chrome, Safari, Firefox, Edge
+  ip        String?
+  userAgent String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@map("activity_logs")
+}
+

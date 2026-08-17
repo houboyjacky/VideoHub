@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { recordActivityLog } from "@/lib/audit-log";
 
 export async function POST(req: Request) {
   try {
@@ -107,6 +108,18 @@ export async function POST(req: Request) {
         usedCount: { increment: 1 },
         usedBy: { push: email },
       },
+    });
+
+    // 5. 記錄註冊活動日誌
+    recordActivityLog({
+      email,
+      name: newUser.name,
+      image: newUser.image,
+      userId: newUser.id,
+      action: "register",
+      status: "success",
+      details: `使用邀請碼「${codeClean}」提交會員審核申請`,
+      req,
     });
 
     return NextResponse.json({

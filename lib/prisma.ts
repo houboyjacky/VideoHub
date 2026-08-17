@@ -49,6 +49,22 @@ export interface InviteCode {
   updatedAt: Date;
 }
 
+export interface ActivityLog {
+  id: string;
+  userId?: string | null;
+  email: string;
+  name?: string | null;
+  image?: string | null;
+  action: "login" | "logout" | "register" | "approve" | "reject" | string;
+  status: "success" | "failed" | string;
+  os?: string | null;
+  browser?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  details?: string | null;
+  createdAt: Date;
+}
+
 export interface SystemConfig {
   id: string;
   key: string;
@@ -299,6 +315,7 @@ export const prisma = {
   group: createModel<Group>("Group"),
   inviteCode: createModel<InviteCode>("InviteCode"),
   systemConfig: createModel<SystemConfig>("SystemConfig"),
+  activityLog: createModel<ActivityLog>("ActivityLog"),
 };
 
 export default prisma;
