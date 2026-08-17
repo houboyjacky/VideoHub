@@ -21,16 +21,18 @@ export default async function HomePage() {
       deleted: false,
       ytPrivacyStatus: "public",
     },
-    orderBy: {
-      publishedAt: "desc",
-    },
-    take: 12,
+    orderBy: [
+      { shootingDate: "desc" },
+      { publishedAt: "desc" },
+    ],
+    take: 20,
     select: {
       id: true,
       ytId: true,
       title: true,
       thumbnail: true,
       publishedAt: true,
+      shootingDate: true,
     },
   });
 
@@ -40,6 +42,7 @@ export default async function HomePage() {
     title: v.title,
     thumbnail: v.thumbnail,
     publishedAt: v.publishedAt.toISOString(),
+    shootingDate: v.shootingDate ? v.shootingDate.toISOString() : null,
   }));
 
   return (
