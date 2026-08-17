@@ -125,7 +125,32 @@ export default function PrivacyPolicyPage() {
               </ul>
             </div>
 
-            {/* 3. Google API 使用者數據與 Limited Use 政策遵循 */}
+            {/* 3. 權限分級與使用範圍宣告 (Role-Based Authorization) */}
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xs text-amber-400 font-mono">
+                  3
+                </span>
+                角色權限分級與存取範圍宣告 (Role-Based Access Disclosure)
+              </h3>
+              <p>本平台針對不同角色實施嚴格的權限隔離原則：</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-blue-500/20 space-y-1.5">
+                  <div className="font-bold text-blue-300">👤 一般會員與訪客 (General Members)</div>
+                  <p className="text-zinc-300">
+                    僅使用 Google 基本身分驗證（<code>openid, email, profile</code>）。系統<strong>絕不會</strong>存取、讀取或使用一般會員個人的任何 YouTube 影片、播放清單或個人頻道。
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-amber-500/20 space-y-1.5">
+                  <div className="font-bold text-amber-300">🛡️ 系統管理員 (Administrator Only)</div>
+                  <p className="text-zinc-300">
+                    YouTube 唯讀存取權限 (<code>youtube.readonly</code>) <strong>僅供管理員同步管理員本人的頻道影片</strong>，用於在站內建立受保護的私有影片分組名冊。
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Google API 使用者數據與 Limited Use 政策遵循 */}
             <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/[0.04] border border-amber-500/30 space-y-3">
               <h3 className="text-base font-semibold text-amber-300 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-amber-400" />
@@ -272,7 +297,32 @@ export default function PrivacyPolicyPage() {
               </ul>
             </div>
 
-            {/* 3. Google API Limited Use Disclosure */}
+            {/* 3. Role-Based Scope & Authorization Disclosure */}
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xs text-amber-400 font-mono">
+                  3
+                </span>
+                Role-Based Authorization &amp; Scope Isolation
+              </h3>
+              <p>We enforce strict role-based data boundary segregation:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-blue-500/20 space-y-1.5">
+                  <div className="font-bold text-blue-300">👤 General Members &amp; Visitors</div>
+                  <p className="text-zinc-300">
+                    Sign in via basic identity scopes (<code>openid, email, profile</code>). The platform <strong>NEVER</strong> accesses, queries, or stores any YouTube videos, playlists, or private channel data of general members.
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-amber-500/20 space-y-1.5">
+                  <div className="font-bold text-amber-300">🛡️ System Administrator (Owner Only)</div>
+                  <p className="text-zinc-300">
+                    The YouTube Data API read-only scope (<code>youtube.readonly</code>) is <strong>strictly used by the platform owner</strong> to synchronize their own creator videos into private streaming groups.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Google API Limited Use Disclosure */}
             <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/[0.04] border border-amber-500/30 space-y-3">
               <h3 className="text-base font-semibold text-amber-300 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-amber-400" />

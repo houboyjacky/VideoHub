@@ -185,7 +185,50 @@ export default function AboutAndApiDisclosurePage() {
             </div>
           </div>
 
-          {/* 4. Google 使用者資料政策遵循與有限用途宣告 */}
+          {/* 4. 權限分級與使用範圍宣告 (Role-Based Access Disclosure) */}
+          <div className="space-y-4">
+            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-400" />
+              <span>權限分級與使用範圍宣告 (Role-Based Authorization)</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 rounded-2xl bg-white/[0.02] border border-blue-500/30 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold font-mono">
+                    User
+                  </div>
+                  <h4 className="font-bold text-white text-sm">一般訪客與會員 (General Members)</h4>
+                </div>
+                <div className="text-xs text-zinc-300 space-y-1.5 leading-relaxed">
+                  <p>
+                    • <strong>僅需基本身分登入：</strong>一般親友會員登入僅請求 <code>openid, email, profile</code> 基本驗證資訊，用於識別身分與審核授權。
+                  </p>
+                  <p className="text-emerald-400 font-medium">
+                    • <strong>絕不存取會員的 YouTube 資料：</strong>系統在後端絕不會讀取、查詢或存取一般會員個人的任何 YouTube 影片、播放清單或個人頻道。
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-white/[0.02] border border-amber-500/30 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold font-mono">
+                    Admin
+                  </div>
+                  <h4 className="font-bold text-white text-sm">系統管理員 (Administrator Only)</h4>
+                </div>
+                <div className="text-xs text-zinc-300 space-y-1.5 leading-relaxed">
+                  <p>
+                    • <strong>專用於管理員創作頻道同步：</strong>YouTube Data API 唯讀權限 (<code>youtube.readonly</code>) <strong>僅限系統管理員本人使用</strong>。
+                  </p>
+                  <p className="text-amber-300 font-medium">
+                    • <strong>後台同步用途：</strong>僅在管理員於後台執行頻道同步時，讀取管理員自己的頻道影片（標題、ID、縮圖）以便在平台內建立分組。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Google 使用者資料政策遵循與有限用途宣告 */}
           <div className="p-6 rounded-2xl bg-amber-500/[0.04] border border-amber-500/30 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
@@ -366,7 +409,50 @@ export default function AboutAndApiDisclosurePage() {
             </div>
           </div>
 
-          {/* 4. Google Limited Use Disclosure */}
+          {/* 4. Role-Based Scope & Authorization Disclosure */}
+          <div className="space-y-4">
+            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-400" />
+              <span>Role-Based Scope &amp; Authorization Disclosure</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 rounded-2xl bg-white/[0.02] border border-blue-500/30 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold font-mono">
+                    User
+                  </div>
+                  <h4 className="font-bold text-white text-sm">General Visitors &amp; Members</h4>
+                </div>
+                <div className="text-xs text-zinc-300 space-y-1.5 leading-relaxed">
+                  <p>
+                    • <strong>Basic Sign-In Only:</strong> General members sign in with standard <code>openid, email, profile</code> scopes strictly for identity verification and membership approval.
+                  </p>
+                  <p className="text-emerald-400 font-medium">
+                    • <strong>No YouTube Access for Users:</strong> The platform NEVER reads, queries, or accesses any YouTube videos, playlists, or private channel data belonging to general members.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-white/[0.02] border border-amber-500/30 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold font-mono">
+                    Admin
+                  </div>
+                  <h4 className="font-bold text-white text-sm">System Administrator (Owner Only)</h4>
+                </div>
+                <div className="text-xs text-zinc-300 space-y-1.5 leading-relaxed">
+                  <p>
+                    • <strong>Dedicated Creator Channel Sync:</strong> The YouTube Data API read-only scope (<code>youtube.readonly</code>) is <strong>strictly reserved for the system administrator</strong>.
+                  </p>
+                  <p className="text-amber-300 font-medium">
+                    • <strong>Admin Sync Purpose:</strong> Only triggered when the admin initiates channel synchronization in the dashboard to import their own creator video metadata (IDs, titles, thumbnails) into the platform.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Google Limited Use Disclosure */}
           <div className="p-6 rounded-2xl bg-amber-500/[0.04] border border-amber-500/30 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
