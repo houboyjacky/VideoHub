@@ -22,7 +22,8 @@ export async function GET() {
 
     const videosWithGroupNames = videos.map((v) => ({
       ...v,
-      groupNames: v.groupIds.map((gid) => groupMap.get(gid) || "未知分組"),
+      groupIds: Array.isArray(v.groupIds) ? v.groupIds : [],
+      groupNames: (Array.isArray(v.groupIds) ? v.groupIds : []).map((gid) => groupMap.get(gid) || "未知分組"),
     }));
 
     return NextResponse.json({ videos: videosWithGroupNames, groups });

@@ -1403,28 +1403,24 @@ export default function AdminVideosPage() {
                   {groups.map((g) => {
                     const isChecked = batchTargetGroupIds.includes(g.id);
                     return (
-                      <label
+                      <button
+                        type="button"
                         key={g.id}
-                        className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                        onClick={() => {
+                          setBatchTargetGroupIds((prev) =>
+                            prev.includes(g.id)
+                              ? prev.filter((id) => id !== g.id)
+                              : [...prev, g.id]
+                          );
+                        }}
+                        className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs cursor-pointer transition-all text-left ${
                           isChecked
-                            ? "bg-amber-500/10 border-amber-500/40 text-white"
-                            : "bg-white/[0.02] border-white/5 text-zinc-400 hover:bg-white/[0.05]"
+                            ? "bg-amber-500/15 border-amber-500 text-white font-medium shadow-sm shadow-amber-500/10"
+                            : "bg-white/[0.02] border-white/5 text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-200"
                         }`}
                       >
-                        <input
-                          type="checkbox"
-                          className="hidden"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setBatchTargetGroupIds([...batchTargetGroupIds, g.id]);
-                            } else {
-                              setBatchTargetGroupIds(batchTargetGroupIds.filter((id) => id !== g.id));
-                            }
-                          }}
-                        />
                         <div
-                          className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                          className={`w-4 h-4 rounded flex items-center justify-center border transition-colors shrink-0 ${
                             isChecked
                               ? "bg-amber-500 border-amber-500 text-black"
                               : "border-white/20 bg-black/40"
@@ -1433,7 +1429,7 @@ export default function AdminVideosPage() {
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
                         <span className="font-medium truncate">{g.name}</span>
-                      </label>
+                      </button>
                     );
                   })}
                 </div>
@@ -1587,7 +1583,7 @@ export default function AdminVideosPage() {
                 )}
 
                 {groups.length === 0 ? (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
+                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
                     目前尚未建立任何自訂群組。可點擊上方「＋ 新增分類」立即新增！
                   </div>
                 ) : (
@@ -1595,28 +1591,24 @@ export default function AdminVideosPage() {
                     {groups.map((g) => {
                       const isChecked = selectedGroupIds.includes(g.id);
                       return (
-                        <label
+                        <button
+                          type="button"
                           key={g.id}
-                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                          onClick={() => {
+                            setSelectedGroupIds((prev) =>
+                              prev.includes(g.id)
+                                ? prev.filter((id) => id !== g.id)
+                                : [...prev, g.id]
+                            );
+                          }}
+                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-all text-left ${
                             isChecked
-                              ? "bg-amber-500/10 border-amber-500/40 text-white"
-                              : "bg-white/[0.02] border-white/5 text-zinc-400 hover:bg-white/[0.05]"
+                              ? "bg-amber-500/15 border-amber-500/60 text-white font-medium shadow-sm shadow-amber-500/10"
+                              : "bg-white/[0.02] border-white/5 text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-200"
                           }`}
                         >
-                          <input
-                            type="checkbox"
-                            className="hidden"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedGroupIds([...selectedGroupIds, g.id]);
-                              } else {
-                                setSelectedGroupIds(selectedGroupIds.filter((id) => id !== g.id));
-                              }
-                            }}
-                          />
                           <div
-                            className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${
+                            className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition-colors shrink-0 ${
                               isChecked
                                 ? "bg-amber-500 border-amber-500 text-black"
                                 : "border-white/20 bg-black/40"
@@ -1625,7 +1617,7 @@ export default function AdminVideosPage() {
                             {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                           </div>
                           <span className="truncate">{g.name}</span>
-                        </label>
+                        </button>
                       );
                     })}
                   </div>
@@ -1763,28 +1755,24 @@ export default function AdminVideosPage() {
                     {groups.map((g) => {
                       const isChecked = editGroupIds.includes(g.id);
                       return (
-                        <label
+                        <button
+                          type="button"
                           key={g.id}
-                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                          onClick={() => {
+                            setEditGroupIds((prev) =>
+                              prev.includes(g.id)
+                                ? prev.filter((id) => id !== g.id)
+                                : [...prev, g.id]
+                            );
+                          }}
+                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-all text-left ${
                             isChecked
-                              ? "bg-amber-500/10 border-amber-500/40 text-white"
-                              : "bg-white/[0.02] border-white/5 text-zinc-400 hover:bg-white/[0.05]"
+                              ? "bg-amber-500/15 border-amber-500/60 text-white font-medium shadow-sm shadow-amber-500/10"
+                              : "bg-white/[0.02] border-white/5 text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-200"
                           }`}
                         >
-                          <input
-                            type="checkbox"
-                            className="hidden"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setEditGroupIds([...editGroupIds, g.id]);
-                              } else {
-                                setEditGroupIds(editGroupIds.filter((id) => id !== g.id));
-                              }
-                            }}
-                          />
                           <div
-                            className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${
+                            className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition-colors shrink-0 ${
                               isChecked
                                 ? "bg-amber-500 border-amber-500 text-black"
                                 : "border-white/20 bg-black/40"
@@ -1793,7 +1781,7 @@ export default function AdminVideosPage() {
                             {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                           </div>
                           <span className="truncate">{g.name}</span>
-                        </label>
+                        </button>
                       );
                     })}
                   </div>

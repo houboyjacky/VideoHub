@@ -23,13 +23,18 @@ export async function PUT(
       return NextResponse.json({ error: "找不到該影片" }, { status: 404 });
     }
 
-    let cleanTags = video.tags;
-    if (Array.isArray(tags)) {
+    let cleanTags: string[] = video.tags || [];
+    if (typeof tags === "string") {
+      cleanTags = tags
+        .split(/[,，\s]+/)
+        .map((t) => t.trim().replace(/^#/, ""))
+        .filter((t) => t.length > 0);
+    } else if (Array.isArray(tags)) {
       cleanTags = tags
         .map((t) => (typeof t === "string" ? t.trim().replace(/^#/, "") : ""))
         .filter((t) => t.length > 0);
-      cleanTags = Array.from(new Set(cleanTags));
     }
+    cleanTags = Array.from(new Set(cleanTags));
 
     const updated = await prisma.video.update({
       where: { id },
