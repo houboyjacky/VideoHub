@@ -23,6 +23,7 @@ export async function PUT(
       return NextResponse.json({ error: "找不到該影片" }, { status: 404 });
     }
 
+    // 1. 標籤處理
     let cleanTags: string[] = video.tags || [];
     if (typeof tags === "string") {
       cleanTags = tags
@@ -36,12 +37,26 @@ export async function PUT(
     }
     cleanTags = Array.from(new Set(cleanTags));
 
+    // 2. 拍攝日期安全解析 (避免空值或非法格式觸發 Invalid Date 崩潰)
+    let parsedShootingDate: Date | null = video.shootingDate ?? null;
+    if (shootingDate === null || shootingDate === "" || shootingDate === undefined) {
+      parsedShootingDate = null;
+    } else if (typeof shootingDate === "string") {
+      const d = new Date(shootingDate);
+      parsedShootingDate = isNaN(d.getTime()) ? null : d;
+    }
+
+    // 3. 分組陣列安全清洗
+    const cleanGroupIds = Array.isArray(groupIds)
+      ? groupIds.filter((gid) => typeof gid === "string" && gid.trim().length > 0)
+      : video.groupIds;
+
     const updated = await prisma.video.update({
       where: { id },
       data: {
-        title: title?.trim() || video.title,
-        shootingDate: shootingDate !== undefined ? (shootingDate ? new Date(shootingDate) : null) : video.shootingDate,
-        groupIds: Array.isArray(groupIds) ? groupIds : video.groupIds,
+        title: typeof title === "string" && title.trim().length > 0 ? title.trim() : video.title,
+        shootingDate: parsedShootingDate,
+        groupIds: cleanGroupIds,
         tags: cleanTags,
       },
     });
