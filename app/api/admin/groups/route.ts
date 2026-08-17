@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     });
 
     if (existing) {
-      return NextResponse.json({ error: "已有相同名稱的分組" }, { status: 400 });
+      return NextResponse.json({ success: true, group: existing, existing: true });
     }
 
     const newGroup = await prisma.group.create({

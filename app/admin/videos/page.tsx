@@ -382,15 +382,30 @@ export default function AdminVideosPage() {
 
   // 編輯影片彈窗內快速建立新分組
   const handleEditInlineCreateGroup = async () => {
-    if (!editInlineNewGroupName.trim()) return;
+    const trimmed = editInlineNewGroupName.trim();
+    if (!trimmed) return;
     try {
       setCreatingEditInlineGroup(true);
       setError(null);
 
+      // 若前端已存在同名分組，直接自動選取
+      const existingInState = groups.find(
+        (g) => g.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (existingInState) {
+        setEditGroupIds((prev) =>
+          prev.includes(existingInState.id) ? prev : [...prev, existingInState.id]
+        );
+        setEditInlineNewGroupName("");
+        setShowEditInlineAddGroup(false);
+        setSuccess(`已自動為您勾選既有分類「${existingInState.name}」！`);
+        return;
+      }
+
       const res = await fetch("/api/admin/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editInlineNewGroupName.trim() }),
+        body: JSON.stringify({ name: trimmed }),
       });
 
       const data = await res.json();
@@ -403,14 +418,16 @@ export default function AdminVideosPage() {
         setGroups(dataGroups.groups || []);
       }
 
-      // 自動將新建立的分組勾選進 editGroupIds
+      // 自動將新建立或取得的分組勾選進 editGroupIds
       if (data.group?.id) {
-        setEditGroupIds((prev) => [...prev, data.group.id]);
+        setEditGroupIds((prev) =>
+          prev.includes(data.group.id) ? prev : [...prev, data.group.id]
+        );
       }
 
       setEditInlineNewGroupName("");
       setShowEditInlineAddGroup(false);
-      setSuccess(`成功建立並指派新分組「${editInlineNewGroupName.trim()}」！`);
+      setSuccess(`成功建立並指派新分類「${trimmed}」！`);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -420,15 +437,29 @@ export default function AdminVideosPage() {
 
   // 新增影片彈窗內快速建立新分組
   const handleAddInlineCreateGroup = async () => {
-    if (!addInlineNewGroupName.trim()) return;
+    const trimmed = addInlineNewGroupName.trim();
+    if (!trimmed) return;
     try {
       setCreatingAddInlineGroup(true);
       setError(null);
 
+      const existingInState = groups.find(
+        (g) => g.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (existingInState) {
+        setSelectedGroupIds((prev) =>
+          prev.includes(existingInState.id) ? prev : [...prev, existingInState.id]
+        );
+        setAddInlineNewGroupName("");
+        setShowAddInlineAddGroup(false);
+        setSuccess(`已自動為您勾選既有分類「${existingInState.name}」！`);
+        return;
+      }
+
       const res = await fetch("/api/admin/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: addInlineNewGroupName.trim() }),
+        body: JSON.stringify({ name: trimmed }),
       });
 
       const data = await res.json();
@@ -441,12 +472,14 @@ export default function AdminVideosPage() {
       }
 
       if (data.group?.id) {
-        setSelectedGroupIds((prev) => [...prev, data.group.id]);
+        setSelectedGroupIds((prev) =>
+          prev.includes(data.group.id) ? prev : [...prev, data.group.id]
+        );
       }
 
       setAddInlineNewGroupName("");
       setShowAddInlineAddGroup(false);
-      setSuccess(`成功建立並勾選新分組「${addInlineNewGroupName.trim()}」！`);
+      setSuccess(`成功建立並勾選新分類「${trimmed}」！`);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -463,13 +496,17 @@ export default function AdminVideosPage() {
       setError(null);
       setSuccess(null);
 
+      const cleanGroupIds = Array.from(
+        new Set(selectedGroupIds.filter((id) => typeof id === "string" && id.trim().length > 0))
+      );
+
       const res = await fetch("/api/admin/videos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url,
           shootingDate: shootingDate || null,
-          groupIds: selectedGroupIds,
+          groupIds: cleanGroupIds,
           tags: tagsInput,
           customTitle: customTitle || undefined,
         }),
@@ -501,19 +538,40 @@ export default function AdminVideosPage() {
       setSubmitting(true);
       setError(null);
 
+      const cleanGroupIds = Array.from(
+        new Set(editGroupIds.filter((id) => typeof id === "string" && id.trim().length > 0))
+      );
+
       const res = await fetch(`/api/admin/videos/${editingVideo.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: editTitle,
           shootingDate: editShootingDate || null,
-          groupIds: editGroupIds,
+          groupIds: cleanGroupIds,
           tags: editTagsInput,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "更新影片失敗");
+
+      // 即時更新前端影片清單狀態
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === editingVideo.id
+            ? {
+                ...v,
+                title: editTitle.trim() || v.title,
+                shootingDate: editShootingDate || null,
+                groupIds: cleanGroupIds,
+                groupNames: cleanGroupIds.map(
+                  (gid) => groups.find((g) => g.id === gid)?.name || "未知分類"
+                ),
+              }
+            : v
+        )
+      );
 
       setSuccess(`已成功更新影片！`);
       setEditingVideo(null);
@@ -1679,6 +1737,20 @@ export default function AdminVideosPage() {
               </button>
             </div>
 
+            {error && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center gap-2 animate-fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{success}</span>
+              </div>
+            )}
+
             <form onSubmit={handleUpdateVideo} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-300">影片標題</label>
@@ -1764,24 +1836,26 @@ export default function AdminVideosPage() {
                     目前尚未建立任何自訂群組。可點擊上方「＋ 新增分類」立即新增！
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
                     {groups.map((g) => {
                       const isChecked = editGroupIds.includes(g.id);
                       return (
                         <button
                           type="button"
                           key={g.id}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             setEditGroupIds((prev) =>
                               prev.includes(g.id)
                                 ? prev.filter((id) => id !== g.id)
                                 : [...prev, g.id]
                             );
                           }}
-                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-all text-left ${
+                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer select-none transition-all text-left ${
                             isChecked
-                              ? "bg-amber-500/15 border-amber-500/60 text-white font-medium shadow-sm shadow-amber-500/10"
-                              : "bg-white/[0.02] border-white/5 text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-200"
+                              ? "bg-amber-500/20 border-amber-500 text-white font-medium shadow-md shadow-amber-500/10 ring-1 ring-amber-500/50"
+                              : "bg-white/[0.03] border-white/10 text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-100 hover:border-white/20"
                           }`}
                         >
                           <div
