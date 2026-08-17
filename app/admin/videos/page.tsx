@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SyncChannelCard } from "@/components/admin/SyncChannelCard";
+import { SmartDateInput } from "@/components/ui/SmartDateInput";
 import {
   Film,
   Plus,
@@ -1527,11 +1528,9 @@ export default function AdminVideosPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-zinc-300">拍攝日期 (選填)</label>
-                  <input
-                    type="date"
+                  <SmartDateInput
                     value={shootingDate}
-                    onChange={(e) => setShootingDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:outline-none focus:border-amber-500/50"
+                    onChange={(val) => setShootingDate(val)}
                   />
                 </div>
               </div>
@@ -1694,11 +1693,9 @@ export default function AdminVideosPage() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-300">拍攝日期 (用於時間排序)</label>
-                <input
-                  type="date"
+                <SmartDateInput
                   value={editShootingDate}
-                  onChange={(e) => setEditShootingDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:outline-none focus:border-amber-500/50"
+                  onChange={(val) => setEditShootingDate(val)}
                 />
               </div>
 
