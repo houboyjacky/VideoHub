@@ -64,25 +64,17 @@ export function SmartDateInput({
     }
   };
 
-  // 月份變更處理：限制 2 位數字 (1-12)，滿 2 位自動跳轉至日期
+  // 月份變更處理：允許自然輸入 1~2 位數 (01-12)，輸入滿 2 位自動跳至日期
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value.replace(/\D/g, "");
     if (raw.length <= 2) {
       const num = parseInt(raw, 10);
-      if (raw.length === 1 && num > 1) {
-        // 如果輸入 2~9，自動補 0 為 02~09 並直接跳到日期
-        raw = "0" + raw;
-        setMonth(raw);
-        triggerChange(year, raw, day);
-        dayRef.current?.focus();
-        dayRef.current?.select();
-        return;
-      }
       if (raw.length === 2 && num > 12) {
         raw = "12";
       }
       setMonth(raw);
       triggerChange(year, raw, day);
+      // 輸入滿 2 位數 (例如 08 或 12) 時自動跳到日期
       if (raw.length === 2) {
         dayRef.current?.focus();
         dayRef.current?.select();
@@ -90,15 +82,20 @@ export function SmartDateInput({
     }
   };
 
-  // 日期變更處理：限制 2 位數字 (1-31)
+  // 月份失焦時自動格式化補零 (例如 8 -> 08)
+  const handleMonthBlur = () => {
+    if (month.length === 1 && parseInt(month, 10) >= 1) {
+      const padded = month.padStart(2, "0");
+      setMonth(padded);
+      triggerChange(year, padded, day);
+    }
+  };
+
+  // 日期變更處理：允許自然輸入 1~2 位數 (01-31)，輸入滿 2 位即完成
   const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value.replace(/\D/g, "");
     if (raw.length <= 2) {
       const num = parseInt(raw, 10);
-      if (raw.length === 1 && num > 3) {
-        // 如果輸入 4~9，自動補 0 為 04~09
-        raw = "0" + raw;
-      }
       if (raw.length === 2 && num > 31) {
         raw = "31";
       }
@@ -107,11 +104,45 @@ export function SmartDateInput({
     }
   };
 
-  // 按鍵退格與鍵盤導引
+  // 日期失焦時自動格式化補零 (例如 5 -> 05)
+  const handleDayBlur = () => {
+    if (day.length === 1 && parseInt(day, 10) >= 1) {
+      const padded = day.padStart(2, "0");
+      setDay(padded);
+      triggerChange(year, month, padded);
+    }
+  };
+
+  // 按鍵退格、分隔鍵快速跳格與導引
   const handleKeyDown = (
     field: "year" | "month" | "day",
     e: React.KeyboardEvent<HTMLInputElement>
   ) => {
+    // 支援按下 / 或 - 或 Enter 快速跳下一格
+    if (e.key === "/" || e.key === "-" || e.key === "Enter") {
+      e.preventDefault();
+      if (field === "year") {
+        monthRef.current?.focus();
+        monthRef.current?.select();
+      } else if (field === "month") {
+        if (month.length === 1) {
+          const padded = month.padStart(2, "0");
+          setMonth(padded);
+          triggerChange(year, padded, day);
+        }
+        dayRef.current?.focus();
+        dayRef.current?.select();
+      } else if (field === "day") {
+        if (day.length === 1) {
+          const padded = day.padStart(2, "0");
+          setDay(padded);
+          triggerChange(year, month, padded);
+        }
+        dayRef.current?.blur();
+      }
+      return;
+    }
+
     if (e.key === "Backspace") {
       if (field === "month" && month === "") {
         yearRef.current?.focus();
@@ -205,10 +236,11 @@ export function SmartDateInput({
           placeholder="MM"
           disabled={disabled}
           onChange={handleMonthChange}
+          onBlur={handleMonthBlur}
           onKeyDown={(e) => handleKeyDown("month", e)}
           onPaste={handlePaste}
           className="w-8 bg-transparent text-center placeholder-zinc-500 text-amber-300 font-semibold focus:outline-none"
-          title="月份 (2位數，輸入完成自動跳至日期)"
+          title="月份 (2位數，輸入滿2位或按/跳至日期)"
         />
         <span className="text-zinc-500 select-none font-bold">/</span>
         <input
@@ -221,6 +253,7 @@ export function SmartDateInput({
           placeholder="DD"
           disabled={disabled}
           onChange={handleDayChange}
+          onBlur={handleDayBlur}
           onKeyDown={(e) => handleKeyDown("day", e)}
           onPaste={handlePaste}
           className="w-8 bg-transparent text-center placeholder-zinc-500 text-amber-300 font-semibold focus:outline-none"
