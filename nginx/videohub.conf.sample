@@ -1,0 +1,59 @@
+# HTTP 自動 301 轉發至 HTTPS
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # 包含統一錯誤頁面 (依伺服器環境配置)
+    # include /etc/nginx/snippets/error_pages.conf;
+
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS 反向代理至 Next.js (預設 Port: 3000)
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name your-domain.com;
+
+    # 專案獨立日誌記錄
+    access_log /path/to/MyShareWeb/logs/nginx_access.log;
+    error_log /path/to/MyShareWeb/logs/nginx_error.log;
+
+    # SSL 憑證設定
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+
+    # Cloudflare 真實 IP 還原 (若有使用 Cloudflare)
+    # include /etc/nginx/snippets/cloudflare_realip.conf;
+
+    # 統一錯誤頁 (可選)
+    # include /etc/nginx/snippets/error_pages.conf;
+
+    # 安全性 Headers 加強
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Next.js 靜態資源長效快取 (7 天)
+    location /_next/static/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_cache_bypass $http_upgrade;
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800, immutable";
+    }
+
+    # 主反向代理
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_cache_bypass $http_upgrade;
+    }
+}

@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.agents
+.agent
+openspec
+docs
+nginx
+systemd
+npm-debug.log
+.env*.local

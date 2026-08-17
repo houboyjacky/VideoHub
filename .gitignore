@@ -1,0 +1,63 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js build output
+/.next/
+/out/
+/build
+
+# Testing
+/coverage
+
+# Environment variables (keep .env.local.example)
+.env
+.env.local
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs (實體日誌檔案忽略，保留 logs/.gitkeep 目錄結構)
+/logs/*.log
+/logs/*.log.*
+
+# Server & Docker configs (忽略實體主機配置檔，保留 .sample 範本檔)
+/nginx/*.conf
+docker-compose.yml
+Dockerfile
+
+# AI Agents, Continuity Harness & OpenSpec
+/.agent/
+/.agents/
+/.claude/
+/.codex/
+/.gemini/
+/.github/
+/.vscode/
+/.continuity/
+/.harness/
+/.codebase-memory/
+/.mcp.json
+*.project-harness.bak
+*.bak
+/openspec/
+AGENTS.md
+CLAUDE.md
+
+# Project Harness runtime evidence (local, sanitized, bounded)
+.project-harness/
+
+# Misc & Secrets
+.DS_Store
+*.pem
+*.key
+.vercel
+*.tsbuildinfo
+next-env.d.ts

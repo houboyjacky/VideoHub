@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="favBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <linearGradient id="favPlay" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#ef4444" />
+    </linearGradient>
+  </defs>
+  <!-- Background Badge -->
+  <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#favBg)" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.6" />
+  <!-- Stream Accent Wave -->
+  <circle cx="24" cy="8" r="2.5" fill="#ef4444" opacity="0.85" />
+  <!-- Play Icon -->
+  <polygon points="12,9 23,16 12,23" fill="url(#favPlay)" />
+</svg>

@@ -1,0 +1,17 @@
+services:
+  videohub:
+    container_name: videohub
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME}
+        NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL}
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./logs:/app/logs
