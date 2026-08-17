@@ -1098,6 +1098,11 @@ export default function AdminVideosPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              const currentGids = Array.isArray(video.groupIds)
+                                ? [...video.groupIds]
+                                : video.groupIds && typeof video.groupIds === "object" && Array.isArray((video.groupIds as any).set)
+                                ? [...(video.groupIds as any).set]
+                                : [];
                               setEditingVideo(video);
                               setEditTitle(video.title);
                               setEditShootingDate(
@@ -1105,8 +1110,8 @@ export default function AdminVideosPage() {
                                   ? new Date(video.shootingDate).toISOString().split("T")[0]
                                   : ""
                               );
-                              setEditGroupIds(video.groupIds || []);
-                              setEditTagsInput((video.tags || []).join(", "));
+                              setEditGroupIds(currentGids);
+                              setEditTagsInput((Array.isArray(video.tags) ? video.tags : []).join(", "));
                             }}
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-200 hover:text-white text-xs font-medium border border-white/10 transition-colors cursor-pointer"
                           >
@@ -1257,6 +1262,11 @@ export default function AdminVideosPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              const currentGids = Array.isArray(video.groupIds)
+                                ? [...video.groupIds]
+                                : video.groupIds && typeof video.groupIds === "object" && Array.isArray((video.groupIds as any).set)
+                                ? [...(video.groupIds as any).set]
+                                : [];
                               setEditingVideo(video);
                               setEditTitle(video.title);
                               setEditShootingDate(
@@ -1264,8 +1274,8 @@ export default function AdminVideosPage() {
                                   ? new Date(video.shootingDate).toISOString().split("T")[0]
                                   : ""
                               );
-                              setEditGroupIds(video.groupIds || []);
-                              setEditTagsInput((video.tags || []).join(", "));
+                              setEditGroupIds(currentGids);
+                              setEditTagsInput((Array.isArray(video.tags) ? video.tags : []).join(", "));
                             }}
                             className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer"
                             title="編輯"

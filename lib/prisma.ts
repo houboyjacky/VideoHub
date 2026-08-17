@@ -79,6 +79,28 @@ const getDb = async () => {
 const mapId = <T>(doc: any): T | null => {
   if (!doc) return null;
   const { _id, ...rest } = doc;
+
+  // 自動規範化 groupIds 與 tags 欄位，確保無論資料庫歷史狀態如何，皆回傳乾淨純陣列
+  if (rest.groupIds) {
+    if (typeof rest.groupIds === "object" && !Array.isArray(rest.groupIds) && Array.isArray((rest.groupIds as any).set)) {
+      rest.groupIds = (rest.groupIds as any).set;
+    } else if (!Array.isArray(rest.groupIds)) {
+      rest.groupIds = [];
+    }
+  } else {
+    rest.groupIds = [];
+  }
+
+  if (rest.tags) {
+    if (typeof rest.tags === "object" && !Array.isArray(rest.tags) && Array.isArray((rest.tags as any).set)) {
+      rest.tags = (rest.tags as any).set;
+    } else if (!Array.isArray(rest.tags)) {
+      rest.tags = [];
+    }
+  } else {
+    rest.tags = [];
+  }
+
   return {
     id: _id ? _id.toString() : doc.id,
     ...rest,
@@ -201,6 +223,8 @@ const createModel = <T>(collectionName: string) => {
           $inc[k] = (v as any).increment;
         } else if (typeof v === "object" && v !== null && (v as any).push !== undefined) {
           $push[k] = (v as any).push;
+        } else if (typeof v === "object" && v !== null && !Array.isArray(v) && (v as any).set !== undefined) {
+          $set[k] = (v as any).set;
         } else {
           $set[k] = v;
         }
@@ -225,7 +249,15 @@ const createModel = <T>(collectionName: string) => {
       if (args.data) {
         const updateData = { ...args.data };
         delete updateData.id;
-        updateOp.$set = { ...updateData, updatedAt: new Date() };
+        const $set: any = { updatedAt: new Date() };
+        for (const [k, v] of Object.entries(updateData)) {
+          if (typeof v === "object" && v !== null && !Array.isArray(v) && (v as any).set !== undefined) {
+            $set[k] = (v as any).set;
+          } else {
+            $set[k] = v;
+          }
+        }
+        updateOp.$set = $set;
       } else {
         updateOp.$set = { updatedAt: new Date() };
       }
