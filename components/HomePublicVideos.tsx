@@ -24,6 +24,22 @@ interface PublicVideo {
   shootingDate?: string | Date | null;
 }
 
+// 🌟 核心時間萃取函式：優先取得拍攝時間 (shootingDate)，若無拍攝時間則取出發布/上傳時間 (publishedAt)
+function getEffectiveTimestamp(v: {
+  shootingDate?: string | Date | null;
+  publishedAt?: string | Date | null;
+}): number {
+  if (v.shootingDate) {
+    const t = new Date(v.shootingDate).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (v.publishedAt) {
+    const t = new Date(v.publishedAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  return 0;
+}
+
 export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
   const [activeVideo, setActiveVideo] = useState<PublicVideo | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -34,11 +50,11 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
   // 檢視模式：預設時間軸 ("timeline")，支援切換網格 ("grid")
   const [viewMode, setViewMode] = useState<"timeline" | "grid">("timeline");
 
-  // 依時間排序
+  // 依時間排序 (優先拍攝時間，若無則依發布/上傳時間)
   const sortedVideos = useMemo(() => {
     return [...videos].sort((a, b) => {
-      const timeA = new Date(a.shootingDate || a.publishedAt).getTime();
-      const timeB = new Date(b.shootingDate || b.publishedAt).getTime();
+      const timeA = getEffectiveTimestamp(a);
+      const timeB = getEffectiveTimestamp(b);
       return sortOrder === "desc" ? timeB - timeA : timeA - timeB;
     });
   }, [videos, sortOrder]);

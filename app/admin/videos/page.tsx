@@ -52,6 +52,22 @@ interface GroupItem {
 
 const PAGE_SIZE = 12; // 以 3 的倍數分頁載入
 
+// 🌟 核心時間萃取函式：優先取得拍攝時間 (shootingDate)，若無拍攝時間則取出發布/上傳時間 (publishedAt)
+function getEffectiveTimestamp(v: {
+  shootingDate?: string | Date | null;
+  publishedAt?: string | Date | null;
+}): number {
+  if (v.shootingDate) {
+    const t = new Date(v.shootingDate).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (v.publishedAt) {
+    const t = new Date(v.publishedAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  return 0;
+}
+
 export default function AdminVideosPage() {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [groups, setGroups] = useState<GroupItem[]>([]);
@@ -158,13 +174,13 @@ export default function AdminVideosPage() {
     };
   }, [videos]);
 
-  // 2. 年份統計 (動態統計拍攝年份或發布年份)
+  // 2. 年份統計 (優先依拍攝年份，若無則依發布年份)
   const yearStats = useMemo(() => {
     const map = new Map<string, number>();
     for (const v of videos) {
-      const date = v.shootingDate ? new Date(v.shootingDate) : v.publishedAt ? new Date(v.publishedAt) : null;
-      if (date && !isNaN(date.getTime())) {
-        const y = date.getFullYear().toString();
+      const time = getEffectiveTimestamp(v);
+      if (time > 0) {
+        const y = new Date(time).getFullYear().toString();
         map.set(y, (map.get(y) || 0) + 1);
       }
     }
@@ -187,10 +203,10 @@ export default function AdminVideosPage() {
         if (p !== filterPrivacy) return false;
       }
 
-      // 年份篩選
+      // 年份篩選 (優先拍攝時間，若無則依發布時間)
       if (filterYear !== "all") {
-        const date = v.shootingDate ? new Date(v.shootingDate) : v.publishedAt ? new Date(v.publishedAt) : null;
-        if (!date || isNaN(date.getTime()) || date.getFullYear().toString() !== filterYear) {
+        const time = getEffectiveTimestamp(v);
+        if (time === 0 || new Date(time).getFullYear().toString() !== filterYear) {
           return false;
         }
       }
@@ -215,10 +231,10 @@ export default function AdminVideosPage() {
       return true;
     });
 
-    // 排序：預設由新到舊 (desc)，亦支援切換為由舊到新 (asc)
+    // 排序：優先取得拍攝時間，若無則取出上傳/發布時間進行排列 (新到舊 desc 或 舊到新 asc)
     return [...list].sort((a, b) => {
-      const timeA = new Date(a.shootingDate || a.publishedAt || 0).getTime();
-      const timeB = new Date(b.shootingDate || b.publishedAt || 0).getTime();
+      const timeA = getEffectiveTimestamp(a);
+      const timeB = getEffectiveTimestamp(b);
       return sortOrder === "desc" ? timeB - timeA : timeA - timeB;
     });
   }, [videos, filterPrivacy, filterYear, filterGroup, searchQuery, sortOrder]);

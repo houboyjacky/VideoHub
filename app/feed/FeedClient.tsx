@@ -28,6 +28,22 @@ interface FeedClientProps {
 
 const PAGE_SIZE = 12; // 預設單頁載入筆數
 
+// 🌟 核心時間萃取函式：優先取得拍攝時間 (shootingDate)，若無拍攝時間則取出發布/上傳時間 (publishedAt)
+function getEffectiveTimestamp(v: {
+  shootingDate?: string | Date | null;
+  publishedAt?: string | Date | null;
+}): number {
+  if (v.shootingDate) {
+    const t = new Date(v.shootingDate).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (v.publishedAt) {
+    const t = new Date(v.publishedAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  return 0;
+}
+
 export function FeedClient({
   initialVideos,
   groups,
@@ -52,17 +68,13 @@ export function FeedClient({
     setVisibleCount(PAGE_SIZE);
   }, [selectedGroupId, selectedYear, selectedTag, searchQuery, sortOrder]);
 
-  // 年份動態統計
+  // 年份動態統計 (優先依拍攝年份，若無則依發布年份)
   const yearStats = useMemo(() => {
     const map = new Map<string, number>();
     for (const v of initialVideos) {
-      const date = v.shootingDate
-        ? new Date(v.shootingDate)
-        : v.publishedAt
-        ? new Date(v.publishedAt)
-        : null;
-      if (date && !isNaN(date.getTime())) {
-        const y = date.getFullYear().toString();
+      const time = getEffectiveTimestamp(v);
+      if (time > 0) {
+        const y = new Date(time).getFullYear().toString();
         map.set(y, (map.get(y) || 0) + 1);
       }
     }
@@ -83,17 +95,12 @@ export function FeedClient({
         }
       }
 
-      // 2. 年份過濾
+      // 2. 年份過濾 (優先拍攝時間，若無則依發布時間)
       if (selectedYear) {
-        const date = video.shootingDate
-          ? new Date(video.shootingDate)
-          : video.publishedAt
-          ? new Date(video.publishedAt)
-          : null;
+        const time = getEffectiveTimestamp(video);
         if (
-          !date ||
-          isNaN(date.getTime()) ||
-          date.getFullYear().toString() !== selectedYear
+          time === 0 ||
+          new Date(time).getFullYear().toString() !== selectedYear
         ) {
           return false;
         }
@@ -120,10 +127,10 @@ export function FeedClient({
       return true;
     });
 
-    // 依拍攝日期或發布日期排序 (預設 desc 由新到舊，支援 asc 由舊到新)
+    // 依拍攝日期 (優先) 或發布日期排序 (預設 desc 由新到舊，支援 asc 由舊到新)
     return filtered.sort((a, b) => {
-      const timeA = new Date(a.shootingDate || a.publishedAt).getTime();
-      const timeB = new Date(b.shootingDate || b.publishedAt).getTime();
+      const timeA = getEffectiveTimestamp(a);
+      const timeB = getEffectiveTimestamp(b);
       return sortOrder === "desc" ? timeB - timeA : timeA - timeB;
     });
   }, [
