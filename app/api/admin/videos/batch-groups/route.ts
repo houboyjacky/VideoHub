@@ -31,7 +31,7 @@ export async function PUT(req: Request) {
           const merged = Array.from(new Set([...currentGroups, ...groupIds]));
           return prisma.video.update({
             where: { id: v.id },
-            data: { groupIds: merged },
+            data: { groupIds: { set: merged } },
           });
         })
       );
@@ -48,7 +48,7 @@ export async function PUT(req: Request) {
           const filtered = currentGroups.filter((gid) => !groupIds.includes(gid));
           return prisma.video.update({
             where: { id: v.id },
-            data: { groupIds: filtered },
+            data: { groupIds: { set: filtered } },
           });
         })
       );

@@ -21,7 +21,7 @@ export async function PUT(
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
-        groupIds,
+        groupIds: { set: groupIds },
       },
     });
 

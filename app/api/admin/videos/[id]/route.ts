@@ -56,8 +56,8 @@ export async function PUT(
       data: {
         title: typeof title === "string" && title.trim().length > 0 ? title.trim() : video.title,
         shootingDate: parsedShootingDate,
-        groupIds: cleanGroupIds,
-        tags: cleanTags,
+        groupIds: { set: cleanGroupIds },
+        tags: { set: cleanTags },
       },
     });
 
