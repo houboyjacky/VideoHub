@@ -84,6 +84,16 @@ export default function AdminVideosPage() {
   const [inlineNewGroupName, setInlineNewGroupName] = useState("");
   const [creatingInlineGroup, setCreatingInlineGroup] = useState(false);
 
+  // 編輯影片彈窗內快速新增分組狀態
+  const [showEditInlineAddGroup, setShowEditInlineAddGroup] = useState(false);
+  const [editInlineNewGroupName, setEditInlineNewGroupName] = useState("");
+  const [creatingEditInlineGroup, setCreatingEditInlineGroup] = useState(false);
+
+  // 新增影片彈窗內快速新增分組狀態
+  const [showAddInlineAddGroup, setShowAddInlineAddGroup] = useState(false);
+  const [addInlineNewGroupName, setAddInlineNewGroupName] = useState("");
+  const [creatingAddInlineGroup, setCreatingAddInlineGroup] = useState(false);
+
   // 新增影片狀態
   const [showAddModal, setShowAddModal] = useState(false);
   const [url, setUrl] = useState("");
@@ -350,6 +360,80 @@ export default function AdminVideosPage() {
       if (err instanceof Error) setError(err.message);
     } finally {
       setCreatingInlineGroup(false);
+    }
+  };
+
+  // 編輯影片彈窗內快速建立新分組
+  const handleEditInlineCreateGroup = async () => {
+    if (!editInlineNewGroupName.trim()) return;
+    try {
+      setCreatingEditInlineGroup(true);
+      setError(null);
+
+      const res = await fetch("/api/admin/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editInlineNewGroupName.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "建立分組失敗");
+
+      // 重新載入分組清單
+      const resGroups = await fetch("/api/admin/groups");
+      if (resGroups.ok) {
+        const dataGroups = await resGroups.json();
+        setGroups(dataGroups.groups || []);
+      }
+
+      // 自動將新建立的分組勾選進 editGroupIds
+      if (data.group?.id) {
+        setEditGroupIds((prev) => [...prev, data.group.id]);
+      }
+
+      setEditInlineNewGroupName("");
+      setShowEditInlineAddGroup(false);
+      setSuccess(`成功建立並指派新分組「${editInlineNewGroupName.trim()}」！`);
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+    } finally {
+      setCreatingEditInlineGroup(false);
+    }
+  };
+
+  // 新增影片彈窗內快速建立新分組
+  const handleAddInlineCreateGroup = async () => {
+    if (!addInlineNewGroupName.trim()) return;
+    try {
+      setCreatingAddInlineGroup(true);
+      setError(null);
+
+      const res = await fetch("/api/admin/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: addInlineNewGroupName.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "建立分組失敗");
+
+      const resGroups = await fetch("/api/admin/groups");
+      if (resGroups.ok) {
+        const dataGroups = await resGroups.json();
+        setGroups(dataGroups.groups || []);
+      }
+
+      if (data.group?.id) {
+        setSelectedGroupIds((prev) => [...prev, data.group.id]);
+      }
+
+      setAddInlineNewGroupName("");
+      setShowAddInlineAddGroup(false);
+      setSuccess(`成功建立並勾選新分組「${addInlineNewGroupName.trim()}」！`);
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+    } finally {
+      setCreatingAddInlineGroup(false);
     }
   };
 
@@ -1453,11 +1537,59 @@ export default function AdminVideosPage() {
 
               {/* 授權群組勾選 */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-zinc-300">
-                  可觀看此影片之授權分組（留空則只有管理員可看）
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-300">
+                    可觀看此影片之授權分組（留空則只有管理員可看）
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddInlineAddGroup(!showAddInlineAddGroup)}
+                    className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{showAddInlineAddGroup ? "收起" : "＋ 新增分類"}</span>
+                  </button>
+                </div>
+
+                {/* 快速新增分類輸入框 */}
+                {showAddInlineAddGroup && (
+                  <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/30 space-y-2 animate-fade-in">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="輸入新分組名稱 (例如: 家庭聚會)"
+                        value={addInlineNewGroupName}
+                        onChange={(e) => setAddInlineNewGroupName(e.target.value)}
+                        className="flex-1 px-3 py-1.5 rounded-lg bg-black/50 border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-500/50"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddInlineCreateGroup();
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddInlineCreateGroup}
+                        disabled={creatingAddInlineGroup || !addInlineNewGroupName.trim()}
+                        className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs transition-colors flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                      >
+                        {creatingAddInlineGroup ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Plus className="w-3 h-3" />
+                        )}
+                        <span>建立</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {groups.length === 0 ? (
-                  <p className="text-xs text-zinc-500 italic">尚無自訂分組，可直接新增。</p>
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
+                    目前尚未建立任何自訂群組。可點擊上方「＋ 新增分類」立即新增！
+                  </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
                     {groups.map((g) => {
@@ -1575,9 +1707,57 @@ export default function AdminVideosPage() {
 
               {/* 授權群組勾選 */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-zinc-300">授權分組（多選）</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-300">授權分組（多選）</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditInlineAddGroup(!showEditInlineAddGroup)}
+                    className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{showEditInlineAddGroup ? "收起" : "＋ 新增分類"}</span>
+                  </button>
+                </div>
+
+                {/* 快速新增分類輸入框 */}
+                {showEditInlineAddGroup && (
+                  <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/30 space-y-2 animate-fade-in">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="輸入新分組名稱 (例如: 戶外運動)"
+                        value={editInlineNewGroupName}
+                        onChange={(e) => setEditInlineNewGroupName(e.target.value)}
+                        className="flex-1 px-3 py-1.5 rounded-lg bg-black/50 border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-500/50"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleEditInlineCreateGroup();
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleEditInlineCreateGroup}
+                        disabled={creatingEditInlineGroup || !editInlineNewGroupName.trim()}
+                        className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs transition-colors flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                      >
+                        {creatingEditInlineGroup ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Plus className="w-3 h-3" />
+                        )}
+                        <span>建立</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {groups.length === 0 ? (
-                  <p className="text-xs text-zinc-500 italic">尚無自訂分組。</p>
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
+                    目前尚未建立任何自訂群組。可點擊上方「＋ 新增分類」立即新增！
+                  </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
                     {groups.map((g) => {
