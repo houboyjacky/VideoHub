@@ -1001,8 +1001,11 @@ export default function AdminVideosPage() {
                       className="relative w-full sm:w-64 md:w-72 aspect-video shrink-0 bg-zinc-900 overflow-hidden cursor-pointer select-none"
                     >
                       <img
-                        src={video.thumbnail}
+                        src={video.thumbnail || "/images/default-thumbnail.jpg"}
                         alt={video.title}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/default-thumbnail.jpg";
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
                       />
 
@@ -1166,8 +1169,11 @@ export default function AdminVideosPage() {
                       className="relative aspect-video w-full bg-zinc-900 overflow-hidden cursor-pointer select-none"
                     >
                       <img
-                        src={video.thumbnail}
+                        src={video.thumbnail || "/images/default-thumbnail.jpg"}
                         alt={video.title}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/default-thumbnail.jpg";
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
                       />
 

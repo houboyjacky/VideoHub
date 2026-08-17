@@ -132,9 +132,12 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
           {/* 影片縮圖 (16:9) */}
           <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
             <img
-              src={video.thumbnail || "/cover-placeholder.svg"}
+              src={video.thumbnail || "/images/default-thumbnail.jpg"}
               alt={video.title}
               loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/images/default-thumbnail.jpg";
+              }}
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
             />
 
@@ -279,9 +282,12 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
                 {/* 縮圖區域 */}
                 <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
                   <img
-                    src={video.thumbnail || "/cover-placeholder.svg"}
+                    src={video.thumbnail || "/images/default-thumbnail.jpg"}
                     alt={video.title}
                     loading="lazy"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/images/default-thumbnail.jpg";
+                    }}
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                   />
 
