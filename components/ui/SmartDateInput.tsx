@@ -21,28 +21,31 @@ export function SmartDateInput({
   const [month, setMonth] = useState("");
   const [day, setDay] = useState("");
 
+  const isFocusedRef = useRef(false);
   const yearRef = useRef<HTMLInputElement>(null);
   const monthRef = useRef<HTMLInputElement>(null);
   const dayRef = useRef<HTMLInputElement>(null);
   const nativePickerRef = useRef<HTMLInputElement>(null);
 
-  // 當外部傳入的 value 改變時同步內部狀態
+  // 當外部傳入的 value 改變且非使用者正在鍵盤輸入時，同步內部狀態
   useEffect(() => {
-    if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      const [y, m, d] = value.split("-");
-      setYear(y || "");
-      setMonth(m || "");
-      setDay(d || "");
-    } else if (!value) {
-      setYear("");
-      setMonth("");
-      setDay("");
+    if (!isFocusedRef.current) {
+      if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [y, m, d] = value.split("-");
+        setYear(y || "");
+        setMonth(m || "");
+        setDay(d || "");
+      } else if (!value) {
+        setYear("");
+        setMonth("");
+        setDay("");
+      }
     }
   }, [value]);
 
-  // 更新並向外回傳完整的 YYYY-MM-DD
+  // 更新並向外回傳完整的 YYYY-MM-DD (只有當三者皆有輸入且有效時才回傳)
   const triggerChange = (newY: string, newM: string, newD: string) => {
-    if (newY && newM && newD && newY.length === 4 && newM.length > 0 && newD.length > 0) {
+    if (newY.length === 4 && newM.length >= 1 && newD.length >= 1) {
       const paddedM = newM.padStart(2, "0");
       const paddedD = newD.padStart(2, "0");
       onChange(`${newY}-${paddedM}-${paddedD}`);
@@ -82,7 +85,7 @@ export function SmartDateInput({
     }
   };
 
-  // 月份失焦時自動格式化補零 (例如 8 -> 08)
+  // 月份失焦時格式化補零 (例如 8 -> 08)
   const handleMonthBlur = () => {
     if (month.length === 1 && parseInt(month, 10) >= 1) {
       const padded = month.padStart(2, "0");
@@ -104,7 +107,7 @@ export function SmartDateInput({
     }
   };
 
-  // 日期失焦時自動格式化補零 (例如 5 -> 05)
+  // 日期失焦時格式化補零 (例如 5 -> 05)
   const handleDayBlur = () => {
     if (day.length === 1 && parseInt(day, 10) >= 1) {
       const padded = day.padStart(2, "0");
@@ -206,6 +209,14 @@ export function SmartDateInput({
 
   return (
     <div
+      onFocus={() => {
+        isFocusedRef.current = true;
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          isFocusedRef.current = false;
+        }
+      }}
       className={`relative flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/30 transition-all text-xs ${className}`}
     >
       {/* 年 - 月 - 日 輸入區 */}
