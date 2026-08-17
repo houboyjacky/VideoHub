@@ -102,15 +102,12 @@ export async function syncChannelVideos(
       });
 
       if (existing) {
-        // 已存在：僅更新元資料，保留管理員自訂的 groupIds 與 tags
+        // 已存在：僅更新縮圖與隱私狀態等元資料，保留管理員在站內修改的標題 (title)、拍攝日期 (shootingDate)、分組 (groupIds) 與標籤 (tags)
         await prisma.video.update({
           where: { id: existing.id },
           data: {
-            title:
-              v.title && v.title !== "未命名影片" && v.title !== "Private video"
-                ? v.title
-                : (existing.title || v.title),
-            description: v.description || existing.description,
+            title: existing.title || v.title, // 🌟 保留站內自訂標題，不被 YouTube 覆蓋
+            description: existing.description || v.description,
             thumbnail: v.thumbnail || existing.thumbnail,
             ytPrivacyStatus: v.ytPrivacyStatus || existing.ytPrivacyStatus,
             publishedAt: v.publishedAt || existing.publishedAt,
