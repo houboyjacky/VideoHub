@@ -6,7 +6,6 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { HomePublicVideos } from "@/components/HomePublicVideos";
 import {
   Sparkles,
-  Lock,
   ExternalLink,
 } from "lucide-react";
 
@@ -195,44 +194,6 @@ export default async function HomePage() {
         <section className="space-y-4">
           <HomePublicVideos videos={publicVideos} />
         </section>
-
-        {/* 4. 政策與安全保障聲明欄 */}
-        <div className="p-5 rounded-2xl bg-amber-500/[0.04] border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-              <Lock className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="font-semibold text-white text-sm">
-                隱私權與資料安全保障聲明
-              </div>
-              <p className="text-zinc-400 text-[11px] mt-0.5">
-                本平台嚴格遵守 YouTube 服務條款與 Google 隱私權政策，您可隨時撤銷存取權或要求刪除資料。
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <Link
-              href="/about"
-              className="px-3.5 py-1.5 rounded-xl glass-btn text-xs font-semibold text-zinc-300 hover:text-white"
-            >
-              應用程式與 API 說明
-            </Link>
-            <Link
-              href="/privacy"
-              className="px-3.5 py-1.5 rounded-xl glass-btn text-xs font-semibold text-amber-300 hover:text-white"
-            >
-              隱私權政策
-            </Link>
-            <Link
-              href="/terms"
-              className="px-3.5 py-1.5 rounded-xl glass-btn text-xs font-semibold text-zinc-300 hover:text-white"
-            >
-              服務條款
-            </Link>
-          </div>
-        </div>
       </main>
     </div>
   );
