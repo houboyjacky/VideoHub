@@ -753,18 +753,29 @@ export default function AdminVideosPage() {
                 return (
                   <GlassCard
                     key={video.id}
+                    onClick={() => {
+                      if (selectedVideoIds.length > 0) {
+                        toggleSelectVideo(video.id);
+                      }
+                    }}
                     className={`p-0 border overflow-hidden flex flex-col sm:flex-row group transition-all duration-300 shadow-lg ${
                       isSelected
                         ? "border-amber-500/80 bg-amber-500/[0.03] ring-1 ring-amber-500/50"
                         : "border-white/10 hover:border-amber-500/40"
-                    }`}
+                    } ${selectedVideoIds.length > 0 ? "cursor-pointer" : ""}`}
                   >
-                    {/* 左側：選取 Checkbox + 縮圖 */}
-                    <div className="relative w-full sm:w-64 md:w-72 aspect-video shrink-0 bg-zinc-900 overflow-hidden">
+                    {/* 左側：選取 Checkbox + 縮圖（點擊圖片直接選取） */}
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSelectVideo(video.id);
+                      }}
+                      className="relative w-full sm:w-64 md:w-72 aspect-video shrink-0 bg-zinc-900 overflow-hidden cursor-pointer select-none"
+                    >
                       <img
                         src={video.thumbnail}
                         alt={video.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
                       />
 
                       {/* 獨立打勾選取按鈕 */}
@@ -777,7 +788,7 @@ export default function AdminVideosPage() {
                           }}
                           className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all cursor-pointer ${
                             isSelected
-                              ? "bg-amber-500 border-amber-400 text-black shadow-lg shadow-amber-500/30"
+                              ? "bg-amber-500 border-amber-400 text-black shadow-lg shadow-amber-500/30 scale-105"
                               : "border-white/40 bg-black/70 text-transparent hover:border-amber-400 hover:bg-black/90"
                           }`}
                           title={isSelected ? "取消勾選" : "勾選此影片"}
@@ -847,6 +858,7 @@ export default function AdminVideosPage() {
                           href={`https://www.youtube.com/watch?v=${video.ytId}`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
                         >
                           <ExternalLink className="w-3.5 h-3.5 text-red-400" />
@@ -856,7 +868,8 @@ export default function AdminVideosPage() {
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setEditingVideo(video);
                               setEditTitle(video.title);
                               setEditShootingDate(
@@ -875,7 +888,10 @@ export default function AdminVideosPage() {
 
                           <button
                             type="button"
-                            onClick={() => handleDelete(video.id, video.title)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(video.id, video.title);
+                            }}
                             disabled={deletingId === video.id}
                             className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer disabled:opacity-50"
                             title="移除影片"
@@ -897,18 +913,29 @@ export default function AdminVideosPage() {
                 return (
                   <GlassCard
                     key={video.id}
+                    onClick={() => {
+                      if (selectedVideoIds.length > 0) {
+                        toggleSelectVideo(video.id);
+                      }
+                    }}
                     className={`p-0 border overflow-hidden flex flex-col justify-between group transition-all duration-300 ${
                       isSelected
                         ? "border-amber-500/80 bg-amber-500/[0.03] ring-1 ring-amber-500/50"
                         : "border-white/10 hover:border-amber-500/40"
-                    }`}
+                    } ${selectedVideoIds.length > 0 ? "cursor-pointer" : ""}`}
                   >
-                    {/* 縮圖與 Checkbox */}
-                    <div className="relative aspect-video w-full bg-zinc-900 overflow-hidden">
+                    {/* 縮圖與 Checkbox（點擊縮圖直接選取） */}
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSelectVideo(video.id);
+                      }}
+                      className="relative aspect-video w-full bg-zinc-900 overflow-hidden cursor-pointer select-none"
+                    >
                       <img
                         src={video.thumbnail}
                         alt={video.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
                       />
 
                       {/* 獨立打勾選取按鈕 */}
@@ -921,7 +948,7 @@ export default function AdminVideosPage() {
                           }}
                           className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all cursor-pointer ${
                             isSelected
-                              ? "bg-amber-500 border-amber-400 text-black shadow-lg shadow-amber-500/30"
+                              ? "bg-amber-500 border-amber-400 text-black shadow-lg shadow-amber-500/30 scale-105"
                               : "border-white/40 bg-black/70 text-transparent hover:border-amber-400 hover:bg-black/90"
                           }`}
                           title={isSelected ? "取消勾選" : "勾選此影片"}
@@ -991,6 +1018,7 @@ export default function AdminVideosPage() {
                           href={`https://www.youtube.com/watch?v=${video.ytId}`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="text-xs text-zinc-400 hover:text-white transition-colors"
                         >
                           YouTube
@@ -999,7 +1027,8 @@ export default function AdminVideosPage() {
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setEditingVideo(video);
                               setEditTitle(video.title);
                               setEditShootingDate(
@@ -1018,7 +1047,10 @@ export default function AdminVideosPage() {
 
                           <button
                             type="button"
-                            onClick={() => handleDelete(video.id, video.title)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(video.id, video.title);
+                            }}
                             disabled={deletingId === video.id}
                             className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer disabled:opacity-50"
                             title="刪除"
