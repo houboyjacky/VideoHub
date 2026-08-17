@@ -20,10 +20,21 @@ export async function GET(req: Request) {
     const groups = await prisma.group.findMany();
     const groupMap = new Map(groups.map((g) => [g.id, g.name]));
 
-    const usersWithGroups = users.map((u) => ({
-      ...u,
-      groupNames: u.groupIds.map((gid) => groupMap.get(gid) || "未知分組"),
-    }));
+    const adminEmails = (process.env.ADMIN_EMAILS || "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    const usersWithGroups = users.map((u) => {
+      const isUserAdmin = adminEmails.includes((u.email || "").toLowerCase());
+      const safeGroupIds = Array.isArray(u.groupIds) ? u.groupIds : [];
+      return {
+        ...u,
+        groupIds: safeGroupIds,
+        isAdmin: isUserAdmin,
+        groupNames: safeGroupIds.map((gid) => groupMap.get(gid) || "未知分組"),
+      };
+    });
 
     return NextResponse.json({ users: usersWithGroups, groups });
   } catch (error) {

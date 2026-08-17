@@ -37,6 +37,15 @@ describe("後台 API 全路徑未授權防護真機測試 (Security: Admin API E
     assert.equal(res.status, 403);
   });
 
+  test("PUT /api/admin/videos/batch-groups 未授權應回傳 403", async () => {
+    const res = await fetch(`${BASE_URL}/api/admin/videos/batch-groups`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoIds: [dummyId], groupIds: [] }),
+    });
+    assert.equal(res.status, 403);
+  });
+
   test("GET /api/admin/users 未授權應回傳 403", async () => {
     const res = await fetch(`${BASE_URL}/api/admin/users`);
     assert.equal(res.status, 403);
