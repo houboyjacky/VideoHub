@@ -56,13 +56,18 @@ export function SmartDateInput({
 
   // 年份變更處理：限制 4 位數字，滿 4 位自動跳轉至月份
   const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "");
+    let raw = e.target.value.replace(/\D/g, "");
+    if (raw.length > 4) {
+      raw = raw.slice(-1);
+    }
     if (raw.length <= 4) {
       setYear(raw);
       triggerChange(raw, month, day);
       if (raw.length === 4) {
-        monthRef.current?.focus();
-        monthRef.current?.select();
+        setTimeout(() => {
+          monthRef.current?.focus();
+          monthRef.current?.select();
+        }, 10);
       }
     }
   };
@@ -70,6 +75,11 @@ export function SmartDateInput({
   // 月份變更處理：允許自然輸入 1~2 位數 (01-12)，輸入滿 2 位自動跳至日期
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value.replace(/\D/g, "");
+    // 若原先已有 2 位數且未全選直接打字，取新鍵入的字元
+    if (raw.length > 2) {
+      raw = raw.slice(-1);
+    }
+
     if (raw.length <= 2) {
       const num = parseInt(raw, 10);
       if (raw.length === 2 && num > 12) {
@@ -77,10 +87,12 @@ export function SmartDateInput({
       }
       setMonth(raw);
       triggerChange(year, raw, day);
-      // 輸入滿 2 位數 (例如 08 或 12) 時自動跳到日期
+      // 輸入滿 2 位數 (例如 10, 11, 12 或 01~09) 時自動跳到日期
       if (raw.length === 2) {
-        dayRef.current?.focus();
-        dayRef.current?.select();
+        setTimeout(() => {
+          dayRef.current?.focus();
+          dayRef.current?.select();
+        }, 10);
       }
     }
   };
@@ -97,6 +109,11 @@ export function SmartDateInput({
   // 日期變更處理：允許自然輸入 1~2 位數 (01-31)，輸入滿 2 位即完成
   const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value.replace(/\D/g, "");
+    // 若原先已有 2 位數且未全選直接打字，取新鍵入的字元
+    if (raw.length > 2) {
+      raw = raw.slice(-1);
+    }
+
     if (raw.length <= 2) {
       const num = parseInt(raw, 10);
       if (raw.length === 2 && num > 31) {
@@ -155,14 +172,18 @@ export function SmartDateInput({
     } else if (e.key === "ArrowRight") {
       if (field === "year" && (e.currentTarget.selectionStart === year.length || year.length === 4)) {
         monthRef.current?.focus();
+        monthRef.current?.select();
       } else if (field === "month" && (e.currentTarget.selectionStart === month.length || month.length === 2)) {
         dayRef.current?.focus();
+        dayRef.current?.select();
       }
     } else if (e.key === "ArrowLeft") {
       if (field === "month" && e.currentTarget.selectionStart === 0) {
         yearRef.current?.focus();
+        yearRef.current?.select();
       } else if (field === "day" && e.currentTarget.selectionStart === 0) {
         monthRef.current?.focus();
+        monthRef.current?.select();
       }
     }
   };
@@ -231,6 +252,8 @@ export function SmartDateInput({
           placeholder="YYYY"
           disabled={disabled}
           onChange={handleYearChange}
+          onFocus={(e) => e.target.select()}
+          onClick={(e) => (e.target as HTMLInputElement).select()}
           onKeyDown={(e) => handleKeyDown("year", e)}
           onPaste={handlePaste}
           className="w-12 bg-transparent text-center placeholder-zinc-500 text-amber-300 font-semibold focus:outline-none"
@@ -247,6 +270,8 @@ export function SmartDateInput({
           placeholder="MM"
           disabled={disabled}
           onChange={handleMonthChange}
+          onFocus={(e) => e.target.select()}
+          onClick={(e) => (e.target as HTMLInputElement).select()}
           onBlur={handleMonthBlur}
           onKeyDown={(e) => handleKeyDown("month", e)}
           onPaste={handlePaste}
@@ -264,6 +289,8 @@ export function SmartDateInput({
           placeholder="DD"
           disabled={disabled}
           onChange={handleDayChange}
+          onFocus={(e) => e.target.select()}
+          onClick={(e) => (e.target as HTMLInputElement).select()}
           onBlur={handleDayBlur}
           onKeyDown={(e) => handleKeyDown("day", e)}
           onPaste={handlePaste}
