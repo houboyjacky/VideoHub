@@ -79,14 +79,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. 建立或更新 User 為 pending 狀態
+    // 3. 建立或更新 User 狀態 (依 autoApprove 智慧分流)
+    const isAuto = !!invite.autoApprove;
+    const targetGroupIds = invite.targetGroupIds || [];
+    const nowTimestamp = new Date();
+
     let newUser;
     if (existingUser) {
+      const mergedGroupIds = isAuto
+        ? Array.from(new Set([...(existingUser.groupIds || []), ...targetGroupIds]))
+        : existingUser.groupIds || [];
+
       newUser = await prisma.user.update({
         where: { email },
         data: {
           name: name.trim(),
-          status: "pending",
+          status: isAuto ? "approved" : "pending",
+          groupIds: mergedGroupIds,
+          usedInviteCode: codeClean,
+          approvedAt: isAuto ? nowTimestamp : existingUser.approvedAt,
           image: session.user.image || undefined,
         },
       });
@@ -95,7 +106,10 @@ export async function POST(req: Request) {
         data: {
           email,
           name: name.trim(),
-          status: "pending",
+          status: isAuto ? "approved" : "pending",
+          groupIds: isAuto ? targetGroupIds : [],
+          usedInviteCode: codeClean,
+          approvedAt: isAuto ? nowTimestamp : null,
           image: session.user.image || undefined,
         },
       });
@@ -110,20 +124,39 @@ export async function POST(req: Request) {
       },
     });
 
-    // 5. 記錄註冊活動日誌
+    // 5. 若為 autoApprove 則發送歡迎信 (背景非同步處理不阻礙註冊)
+    if (isAuto) {
+      (async () => {
+        try {
+          const { sendWelcomeAutoApproveEmail } = await import("@/lib/email");
+          const groups = await prisma.group.findMany({
+            where: { id: { in: targetGroupIds } },
+          });
+          const groupNames = groups.map((g) => g.name);
+          await sendWelcomeAutoApproveEmail(email, newUser.name, groupNames);
+        } catch (mailErr) {
+          console.error("[Register autoApprove Email Error]:", mailErr);
+        }
+      })();
+    }
+
+    // 6. 記錄註冊活動日誌
     recordActivityLog({
       email,
       name: newUser.name,
       image: newUser.image,
       userId: newUser.id,
-      action: "register",
+      action: isAuto ? "auto_approved" : "register",
       status: "success",
-      details: `使用邀請碼「${codeClean}」提交會員審核申請`,
+      details: isAuto
+        ? `使用邀請碼「${codeClean}」自動核准開通並綁定 ${targetGroupIds.length} 個分組`
+        : `使用邀請碼「${codeClean}」提交會員審核申請`,
       req,
     });
 
     return NextResponse.json({
       success: true,
+      autoApproved: isAuto,
       user: {
         id: newUser.id,
         name: newUser.name,

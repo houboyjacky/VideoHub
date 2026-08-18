@@ -9,8 +9,27 @@ export async function GET() {
   if (!check.authorized) return check.response;
 
   try {
-    const inviteCodes = await prisma.inviteCode.findMany({
-      orderBy: { createdAt: "desc" },
+    const [rawInviteCodes, groups] = await Promise.all([
+      prisma.inviteCode.findMany({
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.group.findMany(),
+    ]);
+
+    const groupMap = new Map(groups.map((g) => [g.id, { name: g.name, shareId: g.shareId }]));
+
+    const inviteCodes = rawInviteCodes.map((code) => {
+      const targetGroupIds = code.targetGroupIds || [];
+      const targetGroupNames = targetGroupIds.map((id) => groupMap.get(id)?.name || "未知分組");
+      const targetGroupShareIds = targetGroupIds.map((id) => groupMap.get(id)?.shareId || id);
+      return {
+        ...code,
+        autoApprove: !!code.autoApprove,
+        targetGroupIds,
+        targetGroupNames,
+        targetGroupShareIds,
+        description: code.description || null,
+      };
     });
 
     return NextResponse.json({ inviteCodes });
@@ -27,7 +46,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { customCode, maxUses, daysValid } = body;
+    const { customCode, maxUses, daysValid, autoApprove, targetGroupIds, description } = body;
 
     const parsedMaxUses = parseInt(maxUses || "1", 10);
     const parsedDays = parseInt(daysValid || "30", 10);
@@ -43,7 +62,7 @@ export async function POST(req: Request) {
     // 生成隨機代碼或使用自訂代碼
     let code = customCode?.trim().toUpperCase();
     if (!code) {
-      code = `JACKY-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+      code = `STREAM-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
     }
 
     // 檢查是否有衝突
@@ -58,11 +77,16 @@ export async function POST(req: Request) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + parsedDays);
 
+    const safeTargetGroupIds = Array.isArray(targetGroupIds) ? targetGroupIds : [];
+
     const newInvite = await prisma.inviteCode.create({
       data: {
         code,
         maxUses: parsedMaxUses,
         expiresAt,
+        autoApprove: !!autoApprove,
+        targetGroupIds: safeTargetGroupIds,
+        description: description?.trim() || null,
       },
     });
 

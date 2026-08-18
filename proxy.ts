@@ -9,11 +9,15 @@ export default auth((req) => {
   const session = req.auth;
   const user = session?.user;
 
-  // 靜態資源與認證 API 直通
+  // 靜態資源與公開 API/頁面直通
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/cron") ||
+    pathname.startsWith("/share") ||
+    pathname.startsWith("/api/share") ||
+    pathname.startsWith("/api/og") ||
+    pathname.startsWith("/auth/disabled") ||
     pathname.includes(".") // favicon, images, etc.
   ) {
     return NextResponse.next();
@@ -22,6 +26,12 @@ export default auth((req) => {
   const isLoggedIn = !!user;
   const status = user?.status;
   const isAdmin = !!user?.isAdmin;
+  const disabled = !!user?.disabled;
+
+  // 0. 帳號停用攔截
+  if (isLoggedIn && disabled && pathname !== "/auth/disabled") {
+    return NextResponse.redirect(new URL("/auth/disabled", req.url));
+  }
 
   // 1. 管理後台保護 (/admin/*)
   if (pathname.startsWith("/admin")) {

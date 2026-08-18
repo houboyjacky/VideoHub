@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { Shield, LogOut, Video, Sparkles } from "lucide-react";
+import { RedeemInviteModal } from "./RedeemInviteModal";
 
 export async function Navbar() {
   const session = await auth();
@@ -38,6 +39,9 @@ export async function Navbar() {
             <Video className="w-4 h-4 text-amber-400" />
             <span>影片動態</span>
           </Link>
+
+          {/* 輸入邀請碼按鈕 */}
+          <RedeemInviteModal />
 
           {user.isAdmin && (
             <Link

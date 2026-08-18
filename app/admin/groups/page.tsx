@@ -14,19 +14,33 @@ import {
   CheckCircle2,
   X,
   Check,
+  Share2,
+  Copy,
+  Film,
 } from "lucide-react";
 
 interface GroupData {
   id: string;
   name: string;
   description: string | null;
+  shareId: string;
   videoCount: number;
   userCount: number;
+  thumbnails?: string[];
   createdAt: string;
+}
+
+interface InviteCodeOption {
+  id: string;
+  code: string;
+  autoApprove?: boolean;
+  targetGroupIds?: string[];
+  description?: string | null;
 }
 
 export default function AdminGroupsPage() {
   const [groups, setGroups] = useState<GroupData[]>([]);
+  const [inviteCodes, setInviteCodes] = useState<InviteCodeOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -43,13 +57,25 @@ export default function AdminGroupsPage() {
   const [editDesc, setEditDesc] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const fetchGroups = async () => {
+  // 推廣分享彈窗狀態
+  const [shareGroup, setShareGroup] = useState<GroupData | null>(null);
+  const [selectedInviteCode, setSelectedInviteCode] = useState<string>("");
+  const [copiedType, setCopiedType] = useState<string | null>(null);
+
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/groups");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "無法載入分組清單");
-      setGroups(data.groups || []);
+      const [resGroups, resCodes] = await Promise.all([
+        fetch("/api/admin/groups"),
+        fetch("/api/admin/invite-codes"),
+      ]);
+
+      const dataGroups = await resGroups.json();
+      const dataCodes = await resCodes.json();
+
+      if (!resGroups.ok) throw new Error(dataGroups.error || "無法載入分組清單");
+      setGroups(dataGroups.groups || []);
+      setInviteCodes(dataCodes.inviteCodes || []);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -58,7 +84,7 @@ export default function AdminGroupsPage() {
   };
 
   useEffect(() => {
-    fetchGroups();
+    fetchData();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -82,7 +108,7 @@ export default function AdminGroupsPage() {
       setSuccess(`成功建立分組「${newName}」！`);
       setNewName("");
       setNewDesc("");
-      fetchGroups();
+      fetchData();
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -117,7 +143,7 @@ export default function AdminGroupsPage() {
 
       setSuccess(`已成功更新分組「${editName}」！`);
       setEditingGroup(null);
-      fetchGroups();
+      fetchData();
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -138,12 +164,44 @@ export default function AdminGroupsPage() {
       if (!res.ok) throw new Error(data.error || "刪除失敗");
 
       setSuccess(`已成功刪除分組「${name}」`);
-      fetchGroups();
+      fetchData();
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleOpenShare = (group: GroupData) => {
+    setShareGroup(group);
+    // 預設選取綁定該分組的邀請碼，若無則選第一筆
+    const matchingCode = inviteCodes.find((c) =>
+      c.targetGroupIds?.includes(group.id)
+    );
+    setSelectedInviteCode(matchingCode ? matchingCode.code : "");
+    setCopiedType(null);
+  };
+
+  const getShareUrl = () => {
+    if (!shareGroup || typeof window === "undefined") return "";
+    const origin = window.location.origin;
+    const base = `${origin}/share/group/${shareGroup.shareId || shareGroup.id}`;
+    return selectedInviteCode ? `${base}?code=${selectedInviteCode}` : base;
+  };
+
+  const getShareText = () => {
+    if (!shareGroup) return "";
+    const url = getShareUrl();
+    if (selectedInviteCode) {
+      return `🎬 【${shareGroup.name}】專屬影音內容已開放！\n使用通行邀請碼【${selectedInviteCode}】即可立即解鎖完整影片：\n👉 ${url}`;
+    }
+    return `🎬 【${shareGroup.name}】專屬影音專區預覽：\n👉 ${url}`;
+  };
+
+  const handleCopy = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedType(type);
+    setTimeout(() => setCopiedType(null), 2000);
   };
 
   return (
@@ -257,6 +315,15 @@ export default function AdminGroupsPage() {
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
+                        onClick={() => handleOpenShare(group)}
+                        className="p-1.5 text-amber-400 hover:text-amber-300 rounded-lg hover:bg-amber-500/10 transition-colors cursor-pointer"
+                        title="生成公開推廣分享連結"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => handleOpenEdit(group)}
                         className="p-1.5 text-zinc-400 hover:text-amber-300 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
                         title="修改分組名稱與說明"
@@ -286,21 +353,150 @@ export default function AdminGroupsPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-zinc-400 pt-3 border-t border-white/5">
-                  <span className="flex items-center gap-1">
-                    <Video className="w-3.5 h-3.5 text-sky-400" />
-                    <span>{group.videoCount} 部影片</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{group.userCount} 位成員</span>
-                  </span>
+                <div className="flex items-center justify-between text-xs text-zinc-400 pt-3 border-t border-white/5">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <Video className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{group.videoCount} 部影片</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{group.userCount} 位成員</span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenShare(group)}
+                    className="text-[11px] text-amber-400 hover:underline flex items-center gap-1"
+                  >
+                    <span>🔗 推廣</span>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </GlassCard>
+
+      {/* 推廣分享彈窗 Modal */}
+      {shareGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-lg glass-panel p-6 rounded-2xl border border-white/10 shadow-2xl space-y-4 bg-zinc-950/90">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 text-amber-400">
+                <Share2 className="w-5 h-5" />
+                <h3 className="text-base font-bold text-white">【{shareGroup.name}】公開展示推廣</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShareGroup(null)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* 縮圖預覽 */}
+              {shareGroup.thumbnails && shareGroup.thumbnails.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-xs text-zinc-400 flex items-center gap-1">
+                    <Film className="w-3.5 h-3.5 text-amber-400" />
+                    <span>展示頁精選縮圖預覽</span>
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {shareGroup.thumbnails.map((thumb, idx) => (
+                      <div key={idx} className="aspect-video rounded-lg overflow-hidden bg-zinc-900 border border-white/10">
+                        <img src={thumb} alt="thumbnail preview" className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 選擇附帶邀請碼 */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-zinc-300">
+                  附帶邀請碼（選填，訪客點擊連結後自動預填）
+                </label>
+                <select
+                  value={selectedInviteCode}
+                  onChange={(e) => setSelectedInviteCode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs text-zinc-200 bg-zinc-900"
+                >
+                  <option value="">-- 純分享展示頁（不帶邀請碼） --</option>
+                  {inviteCodes.map((code) => (
+                    <option key={code.id} value={code.code}>
+                      {code.code} {code.autoApprove ? "⚡ 自動核准" : "（手動審核）"}{" "}
+                      {code.description ? `— ${code.description}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 分享連結 */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-zinc-300">專屬展示網址</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={getShareUrl()}
+                    className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono text-zinc-300 bg-black/40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(getShareUrl(), "url")}
+                    className="px-3 py-2 rounded-xl glass-btn-primary flex items-center gap-1.5 text-xs shrink-0 font-semibold cursor-pointer"
+                  >
+                    {copiedType === "url" ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>已複製</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>複製連結</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* LINE 短文 */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-zinc-300">LINE / 社群推廣短文</label>
+                <textarea
+                  rows={3}
+                  readOnly
+                  value={getShareText()}
+                  className="w-full p-3 rounded-xl glass-input text-xs text-zinc-300 bg-black/40 resize-none font-sans"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(getShareText(), "text")}
+                    className="px-4 py-2 rounded-xl glass-btn flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-white border-amber-500/30 cursor-pointer"
+                  >
+                    {copiedType === "text" ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>已複製短文</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>複製推廣短文</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 編輯分組彈窗 Modal */}
       {editingGroup && (

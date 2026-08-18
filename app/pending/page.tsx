@@ -4,12 +4,15 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Clock, ShieldAlert, LogOut, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
+import { getAdminDisplayName } from "@/lib/admin-helper";
+
 export default async function PendingPage() {
   const session = await auth();
   const user = session?.user;
   const status = user?.status || "pending";
   const isRejected = status === "rejected";
   const isApproved = status === "approved";
+  const adminName = await getAdminDisplayName();
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 relative z-10">
@@ -43,7 +46,7 @@ export default async function PendingPage() {
             {isApproved ? (
               "您的申請已經核准，現在可以開始觀看影片。"
             ) : isRejected ? (
-              "很抱歉，您的存取申請目前未獲通過。若有任何疑問，請直接與 Jacky 聯繫。"
+              `很抱歉，您的存取申請目前未獲通過。若有任何疑問，請直接與 ${adminName} 聯繫。`
             ) : (
               <>
                 嗨 <span className="text-zinc-200 font-medium">{user?.name || "朋友"}</span>，您的加入申請已送出！管理員正在進行手動審核，通過後將會發送 Email 通知您。

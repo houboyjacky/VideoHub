@@ -53,6 +53,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 image: user.image || undefined,
                 status: "approved",
                 approvedAt: existing.approvedAt || new Date(),
+                lastLoginAt: new Date(),
               },
             });
             logger.auth(`管理員登入成功（既有用戶更新）: ${email}`);
@@ -64,6 +65,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 image: user.image || undefined,
                 status: "approved",
                 approvedAt: new Date(),
+                lastLoginAt: new Date(),
               },
             });
             dbUserId = created.id;
@@ -78,6 +80,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           if (existing) {
             dbUserId = existing.id;
+
+            // 檢查帳號是否被停用
+            if (existing.disabled) {
+              logger.auth(`已停用帳號嘗試登入遭攔截: ${email}`);
+              recordActivityLog({
+                email,
+                name: user.name || existing.name || "Google 用戶",
+                image: user.image || null,
+                userId: dbUserId,
+                action: "login",
+                status: "failed",
+                details: "登入攔截：該帳號已被管理員停用",
+              });
+              return "/auth/disabled";
+            }
+
+            // 更新最後活躍時間
+            await prisma.user.update({
+              where: { email },
+              data: {
+                name: user.name || existing.name,
+                image: user.image || undefined,
+                lastLoginAt: new Date(),
+              },
+            });
+
             roleDetail = `用戶登入（狀態: ${existing.status}）`;
             logger.auth(`一般用戶登入: ${email}`, { status: existing.status });
           } else {
@@ -135,6 +163,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             updatedToken.status = dbUser.status;
             updatedToken.name = dbUser.name;
             updatedToken.groupIds = dbUser.groupIds;
+            updatedToken.disabled = !!dbUser.disabled;
           } else if (isAdmin) {
             updatedToken.status = "approved";
           } else {

@@ -137,6 +137,60 @@ export async function sendRejectionEmail(to: string, name: string) {
   return sendEmail({ to, subject, html });
 }
 
+export async function sendWelcomeAutoApproveEmail(
+  to: string,
+  name: string,
+  groupNames: string[] = []
+) {
+  const siteUrl = process.env.NEXTAUTH_URL || "https://your-domain.com";
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || "VideoHub";
+  const subject = `🎬 歡迎加入 ${appName}！專屬分組已為您開通`;
+
+  const groupsListHtml =
+    groupNames.length > 0
+      ? `<div style="margin: 16px 0; padding: 12px 16px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px;">
+          <p style="margin: 0 0 6px 0; color: #fbbf24; font-size: 13px; font-weight: 600;">已開通專屬分組：</p>
+          <ul style="margin: 0; padding-left: 20px; color: #f4f4f5; font-size: 14px; line-height: 1.5;">
+            ${groupNames.map((g) => `<li><strong>${g}</strong></li>`).join("")}
+          </ul>
+        </div>`
+      : "";
+
+  const html = `
+    <div style="background-color: #0a0a0f; color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px 20px; max-width: 560px; margin: 0 auto; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #f59e0b; margin: 0; font-size: 24px; letter-spacing: -0.5px;">${appName}</h1>
+        <p style="color: #a1a1aa; font-size: 13px; margin-top: 4px;">私人影片分享空間</p>
+      </div>
+
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; margin-bottom: 28px;">
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 0;">哈囉，${name}！</h2>
+        <p style="color: #d4d4d8; font-size: 15px; line-height: 1.6;">
+          歡迎加入 ${appName}！您使用的通行邀請碼已自動為您開通專屬存取權限。
+        </p>
+        ${groupsListHtml}
+        <p style="color: #a1a1aa; font-size: 14px; line-height: 1.6;">
+          現在您可以立即進入影片動態牆，開始暢享高畫質影音內容！
+        </p>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 30px;">
+        <a href="${siteUrl}/feed" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000000; padding: 14px 32px; border-radius: 10px; font-weight: 600; text-decoration: none; display: inline-block; font-size: 15px; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);">
+          立即進入 ${appName} 動態牆
+        </a>
+      </div>
+
+      <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px;">
+        <p style="color: #71717a; font-size: 12px; margin: 0;">
+          此郵件由 ${appName} 系統自動發送，請勿直接回覆。
+        </p>
+      </div>
+    </div>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
 export function maskSecret(secret?: string, prefixLen = 4, suffixLen = 0): string {
   if (!secret) return "未設定";
   if (secret.length <= prefixLen + suffixLen) {

@@ -151,8 +151,34 @@ describe("後台 API 全路徑未授權防護真機測試 (Security: Admin API E
     assert.equal(res.status, 403);
   });
 
+  test("PATCH /api/admin/users/[id] 未授權應回傳 403", async () => {
+    const res = await fetch(`${BASE_URL}/api/admin/users/${dummyId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Hacker" }),
+    });
+    assert.equal(res.status, 403);
+  });
+
+  test("DELETE /api/admin/users/[id] 未授權應回傳 403", async () => {
+    const res = await fetch(`${BASE_URL}/api/admin/users/${dummyId}`, {
+      method: "DELETE",
+    });
+    assert.equal(res.status, 403);
+  });
+
+  test("POST /api/share/redeem 未登入應回傳 401 或 403", async () => {
+    const res = await fetch(`${BASE_URL}/api/share/redeem`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: "SAMPLE" }),
+    });
+    assert.ok(res.status === 401 || res.status === 403);
+  });
+
   test("GET /api/videos 未登入應回傳 401 Unauthorized", async () => {
     const res = await fetch(`${BASE_URL}/api/videos`);
     assert.equal(res.status, 401);
   });
 });
+

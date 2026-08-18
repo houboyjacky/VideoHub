@@ -48,6 +48,7 @@ export const authConfig = {
         session.user.status = (token.status as string) || "unregistered";
         session.user.isAdmin = !!token.isAdmin;
         session.user.groupIds = (token.groupIds as string[]) || [];
+        session.user.disabled = !!token.disabled;
         (session as any).accessToken = token.accessToken;
       }
       return session;

@@ -29,6 +29,7 @@ model Group {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String   @unique
   description String?
+  shareId     String?  @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -36,29 +37,35 @@ model Group {
 }
 
 model User {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
-  email      String    @unique
-  name       String
-  image      String?
-  status     String    @default("pending") // pending | approved | rejected
-  groupIds   String[]  @default([]) @db.ObjectId
-  approvedAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  email          String    @unique
+  name           String
+  image          String?
+  status         String    @default("pending") // pending | approved | rejected
+  groupIds       String[]  @default([]) @db.ObjectId
+  disabled       Boolean   @default(false)
+  usedInviteCode String?
+  lastLoginAt    DateTime?
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@map("users")
 }
 
 model InviteCode {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  code      String   @unique
-  maxUses   Int      @default(1)
-  usedCount Int      @default(0)
-  expiresAt DateTime
-  disabled  Boolean  @default(false)
-  usedBy    String[] @default([]) // 紀錄使用此碼之 Email 清單
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  code           String   @unique
+  maxUses        Int      @default(1)
+  usedCount      Int      @default(0)
+  expiresAt      DateTime
+  disabled       Boolean  @default(false)
+  usedBy         String[] @default([]) // 紀錄使用此碼之 Email 清單
+  autoApprove    Boolean  @default(false)
+  targetGroupIds String[] @default([]) @db.ObjectId
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("invite_codes")
 }

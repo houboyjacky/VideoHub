@@ -8,6 +8,9 @@ export interface User {
   status: "unregistered" | "pending" | "approved" | "rejected";
   isAdmin?: boolean;
   groupIds: string[];
+  disabled?: boolean;
+  usedInviteCode?: string | null;
+  lastLoginAt?: Date | null;
   approvedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +36,7 @@ export interface Group {
   id: string;
   name: string;
   description?: string | null;
+  shareId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +49,9 @@ export interface InviteCode {
   expiresAt: Date;
   disabled: boolean;
   usedBy: string[];
+  autoApprove?: boolean;
+  targetGroupIds?: string[];
+  description?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -235,9 +242,9 @@ const createModel = <T>(collectionName: string) => {
       const $push: any = {};
 
       for (const [k, v] of Object.entries(updateData)) {
-        if (typeof v === "object" && v !== null && (v as any).increment !== undefined) {
+        if (typeof v === "object" && v !== null && !Array.isArray(v) && (v as any).increment !== undefined) {
           $inc[k] = (v as any).increment;
-        } else if (typeof v === "object" && v !== null && (v as any).push !== undefined) {
+        } else if (typeof v === "object" && v !== null && !Array.isArray(v) && (v as any).push !== undefined) {
           $push[k] = (v as any).push;
         } else if (typeof v === "object" && v !== null && !Array.isArray(v) && (v as any).set !== undefined) {
           $set[k] = (v as any).set;

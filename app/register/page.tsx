@@ -1,16 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { KeyRound, User, Sparkles, Loader2, AlertCircle } from "lucide-react";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const codeParam = searchParams.get("code");
+    if (codeParam) {
+      setInviteCode(codeParam.trim().toUpperCase());
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,8 +38,13 @@ export default function RegisterPage() {
         throw new Error(data.error || "註冊失敗，請稍候重試");
       }
 
-      // 成功後跳轉至待審核頁
-      router.push("/pending");
+      if (data.autoApproved) {
+        // 自動核准直接進入動態牆
+        router.push("/feed");
+      } else {
+        // 需手動審核跳轉至待審核頁
+        router.push("/pending");
+      }
       router.refresh();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -57,7 +70,7 @@ export default function RegisterPage() {
               歡迎來到 {process.env.NEXT_PUBLIC_APP_NAME || "VideoHub"}
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400">
-              請填寫您的稱呼並輸入邀請碼以送出加入申請
+              請填寫您的稱呼並輸入通行邀請碼以完成加入
             </p>
           </div>
 
@@ -84,7 +97,7 @@ export default function RegisterPage() {
                   id="name"
                   type="text"
                   required
-                  placeholder="例如：王小明 或 Jacky的朋友"
+                  placeholder="例如：王小明 或 創作者的好友"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-sm"
@@ -118,7 +131,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3 rounded-xl glass-btn-primary flex items-center justify-center gap-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-2 py-3 rounded-xl glass-btn-primary flex items-center justify-center gap-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <>
@@ -126,16 +139,30 @@ export default function RegisterPage() {
                   <span>正在驗證申請...</span>
                 </>
               ) : (
-                <span>送出申請</span>
+                <span>送出並確認加入</span>
               )}
             </button>
           </form>
 
           <p className="text-center text-[11px] text-zinc-500 mt-6">
-            送出後將由管理員手動審核，通過後將發送 Email 通知
+            若持有自動通行碼將立即開通；一般邀請碼將由管理員審核後發信通知
           </p>
         </GlassCard>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[80vh] flex items-center justify-center text-amber-400">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   );
 }

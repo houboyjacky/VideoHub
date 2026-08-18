@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { generateShareId } from "@/lib/share-id";
 
 // GET: 取得所有分組清單
 export async function GET() {
@@ -12,22 +13,29 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    // 同時統計各分組影片與用戶數量
+    // 同時統計各分組影片、用戶數量與前 3 張縮圖
     const groupsWithStats = await Promise.all(
       groups.map(async (group) => {
-        const [videoCount, userCount] = await Promise.all([
+        const [videoCount, userCount, topVideos] = await Promise.all([
           prisma.video.count({
             where: { groupIds: { has: group.id }, deleted: false },
           }),
           prisma.user.count({
             where: { groupIds: { has: group.id } },
           }),
+          prisma.video.findMany({
+            where: { groupIds: { has: group.id }, deleted: false },
+            orderBy: [{ shootingDate: "desc" }, { publishedAt: "desc" }],
+            take: 3,
+          }),
         ]);
 
         return {
           ...group,
+          shareId: group.shareId || group.id,
           videoCount,
           userCount,
+          thumbnails: topVideos.map((v) => v.thumbnail).filter(Boolean),
         };
       })
     );
@@ -66,6 +74,7 @@ export async function POST(req: Request) {
       data: {
         name: cleanName,
         description: description?.trim() || null,
+        shareId: generateShareId(),
       },
     });
 

@@ -12,7 +12,17 @@ import {
   Calendar,
   AlertCircle,
   CheckCircle2,
+  Zap,
+  Share2,
+  X,
+  Layers,
 } from "lucide-react";
+
+interface GroupOption {
+  id: string;
+  name: string;
+  shareId?: string | null;
+}
 
 interface InviteCodeData {
   id: string;
@@ -22,30 +32,51 @@ interface InviteCodeData {
   expiresAt: string;
   disabled: boolean;
   usedBy: string[];
+  autoApprove?: boolean;
+  targetGroupIds?: string[];
+  targetGroupNames?: string[];
+  targetGroupShareIds?: string[];
+  description?: string | null;
   createdAt: string;
 }
 
 export default function AdminInviteCodesPage() {
   const [inviteCodes, setInviteCodes] = useState<InviteCodeData[]>([]);
+  const [groups, setGroups] = useState<GroupOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
+  // Form states
   const [customCode, setCustomCode] = useState("");
   const [maxUses, setMaxUses] = useState("1");
   const [daysValid, setDaysValid] = useState("30");
+  const [autoApprove, setAutoApprove] = useState(false);
+  const [targetGroupIds, setTargetGroupIds] = useState<string[]>([]);
+  const [description, setDescription] = useState("");
+
+  // Share Modal states
+  const [shareModalItem, setShareModalItem] = useState<InviteCodeData | null>(null);
+  const [copiedType, setCopiedType] = useState<string | null>(null);
 
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const fetchInviteCodes = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/invite-codes");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "無法載入邀請碼清單");
-      setInviteCodes(data.inviteCodes || []);
+      const [resCodes, resGroups] = await Promise.all([
+        fetch("/api/admin/invite-codes"),
+        fetch("/api/admin/groups"),
+      ]);
+
+      const dataCodes = await resCodes.json();
+      const dataGroups = await resGroups.json();
+
+      if (!resCodes.ok) throw new Error(dataCodes.error || "無法載入邀請碼清單");
+      setInviteCodes(dataCodes.inviteCodes || []);
+      setGroups(dataGroups.groups || []);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -54,7 +85,7 @@ export default function AdminInviteCodesPage() {
   };
 
   useEffect(() => {
-    fetchInviteCodes();
+    fetchData();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -67,15 +98,25 @@ export default function AdminInviteCodesPage() {
       const res = await fetch("/api/admin/invite-codes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customCode, maxUses, daysValid }),
+        body: JSON.stringify({
+          customCode,
+          maxUses,
+          daysValid,
+          autoApprove,
+          targetGroupIds,
+          description,
+        }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "建立邀請碼失敗");
 
-      setSuccess(`成功建立邀請碼：${data.inviteCode.code}`);
+      setSuccess(`成功建立智慧邀請碼：${data.inviteCode.code}`);
       setCustomCode("");
-      fetchInviteCodes();
+      setDescription("");
+      setAutoApprove(false);
+      setTargetGroupIds([]);
+      fetchData();
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -97,7 +138,7 @@ export default function AdminInviteCodesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "操作失敗");
 
-      fetchInviteCodes();
+      fetchData();
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -105,10 +146,35 @@ export default function AdminInviteCodesPage() {
     }
   };
 
-  const handleCopy = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
+  const handleCopy = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    if (type === "code") {
+      setCopiedCode(text);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } else {
+      setCopiedType(type);
+      setTimeout(() => setCopiedType(null), 2000);
+    }
+  };
+
+  const toggleGroupSelection = (gid: string) => {
+    setTargetGroupIds((prev) =>
+      prev.includes(gid) ? prev.filter((id) => id !== gid) : [...prev, gid]
+    );
+  };
+
+  // 生成推廣網址
+  const getShareUrl = (item: InviteCodeData) => {
+    if (typeof window === "undefined") return "";
+    const origin = window.location.origin;
+    const shareId = item.targetGroupShareIds?.[0] || item.targetGroupIds?.[0] || "general";
+    return `${origin}/share/group/${shareId}?code=${item.code}`;
+  };
+
+  const getShareText = (item: InviteCodeData) => {
+    const groupName = item.targetGroupNames?.[0] || "專屬影音分組";
+    const url = getShareUrl(item);
+    return `🎬 【${groupName}】專屬影音內容已開放！\n使用邀請碼【${item.code}】即可立即解鎖完整影片：\n👉 ${url}`;
   };
 
   return (
@@ -128,72 +194,147 @@ export default function AdminInviteCodesPage() {
         </div>
       )}
 
-      {/* 建立邀請碼表單 */}
+      {/* 建立智慧邀請碼表單 */}
       <GlassCard className="p-6 border border-white/10 shadow-xl">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400">
             <Plus className="w-4 h-4" />
           </div>
-          <h2 className="text-base font-semibold text-white">建立新邀請碼</h2>
+          <h2 className="text-base font-semibold text-white">建立新智慧邀請碼</h2>
         </div>
 
-        <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-zinc-300">
+                自訂代碼 (選填，留空自動生成)
+              </label>
+              <input
+                type="text"
+                placeholder="例如：VIP-FRIENDS"
+                value={customCode}
+                onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
+                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm uppercase font-mono"
+                disabled={creating}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-zinc-300">
+                可用次數上限
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                required
+                value={maxUses}
+                onChange={(e) => setMaxUses(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
+                disabled={creating}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-zinc-300">
+                有效天數 (預設 30 天)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                required
+                value={daysValid}
+                onChange={(e) => setDaysValid(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
+                disabled={creating}
+              />
+            </div>
+          </div>
+
+          {/* 描述用途 */}
           <div className="space-y-1.5">
             <label className="block text-xs font-medium text-zinc-300">
-              自訂邀請碼 (選填，留空自動生成)
+              用途備註 (選填，例如：LINE 群推廣、家人專屬)
             </label>
             <input
               type="text"
-              placeholder="例如：VIP-FRIENDS"
-              value={customCode}
-              onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm uppercase font-mono"
-              disabled={creating}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-zinc-300">
-              可用次數上限
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="1000"
-              required
-              value={maxUses}
-              onChange={(e) => setMaxUses(e.target.value)}
+              placeholder="請輸入此邀請碼的用途或對象備註"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
               disabled={creating}
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-zinc-300">
-              有效天數 (預設 30 天)
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="365"
-              required
-              value={daysValid}
-              onChange={(e) => setDaysValid(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
-              disabled={creating}
-            />
+          {/* 自動核准 Switch 與綁定分組 */}
+          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Zap className={`w-4 h-4 ${autoApprove ? "text-amber-400" : "text-zinc-500"}`} />
+                <div>
+                  <span className="text-sm font-semibold text-white">⚡ 自動核准免審核 (Auto-Approve)</span>
+                  <p className="text-xs text-zinc-400">啟用後，訪客持此碼登入填名即可秒速通過，並自動綁定下方勾選的分組</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAutoApprove(!autoApprove)}
+                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                  autoApprove ? "bg-amber-500" : "bg-zinc-700"
+                }`}
+              >
+                <span
+                  className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
+                    autoApprove ? "left-6" : "left-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* 目標分組選擇 */}
+            <div className="pt-2 border-t border-white/5 space-y-2">
+              <label className="block text-xs font-medium text-zinc-300">
+                目標自動綁定分組（可多選）
+              </label>
+              {groups.length === 0 ? (
+                <p className="text-xs text-zinc-500">目前尚無分組，請先至「分組管理」建立分組。</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {groups.map((g) => {
+                    const isSelected = targetGroupIds.includes(g.id);
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => toggleGroupSelection(g.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                          isSelected
+                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                            : "bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <Layers className="w-3 h-3" />
+                        <span>{g.name}</span>
+                        {isSelected && <Check className="w-3 h-3 text-amber-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div>
+          <div className="flex justify-end pt-2">
             <button
               type="submit"
               disabled={creating}
-              className="w-full py-2.5 rounded-xl glass-btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl glass-btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50"
             >
               {creating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>生成中...</span>
+                  <span>建立中...</span>
                 </>
               ) : (
                 <>
@@ -211,7 +352,7 @@ export default function AdminInviteCodesPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <KeyRound className="w-4 h-4 text-pink-400" />
-            <h2 className="text-base font-semibold text-white">邀請碼清單</h2>
+            <h2 className="text-base font-semibold text-white">智慧邀請碼清單</h2>
           </div>
           <span className="text-xs text-zinc-400">共 {inviteCodes.length} 組</span>
         </div>
@@ -229,7 +370,8 @@ export default function AdminInviteCodesPage() {
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="text-xs text-zinc-400 uppercase border-b border-white/10 bg-white/[0.02]">
                 <tr>
-                  <th className="py-3.5 px-4">邀請代碼</th>
+                  <th className="py-3.5 px-4">邀請代碼 / 備註</th>
+                  <th className="py-3.5 px-4">類型 / 目標分組</th>
                   <th className="py-3.5 px-4">使用狀況</th>
                   <th className="py-3.5 px-4">有效期限</th>
                   <th className="py-3.5 px-4">狀態</th>
@@ -244,20 +386,51 @@ export default function AdminInviteCodesPage() {
 
                   return (
                     <tr key={item.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-amber-300 flex items-center gap-2">
-                        <span>{item.code}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(item.code)}
-                          className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white"
-                          title="複製邀請碼"
-                        >
-                          {copiedCode === item.code ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-amber-300">{item.code}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(item.code, "code")}
+                            className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white"
+                            title="複製邀請碼"
+                          >
+                            {copiedCode === item.code ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        {item.description && (
+                          <div className="text-[11px] text-zinc-400 mt-0.5">{item.description}</div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-1">
+                          {item.autoApprove ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold">
+                              <Zap className="w-3 h-3" />
+                              <span>自動核准</span>
+                            </span>
                           ) : (
-                            <Copy className="w-3.5 h-3.5" />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700">
+                              <span>手動審核</span>
+                            </span>
                           )}
-                        </button>
+                          {item.targetGroupNames && item.targetGroupNames.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {item.targetGroupNames.map((gn, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-1.5 py-0.5 rounded text-[10px] bg-white/5 text-zinc-300 border border-white/10"
+                                >
+                                  {gn}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 font-mono">
                         <span className="text-zinc-200 font-semibold">{item.usedCount}</span>
@@ -288,7 +461,16 @@ export default function AdminInviteCodesPage() {
                           </span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setShareModalItem(item)}
+                          className="px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30 transition-colors inline-flex items-center gap-1"
+                          title="生成推廣短文與連結"
+                        >
+                          <Share2 className="w-3 h-3" />
+                          <span>推廣</span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleToggle(item.id, item.disabled)}
@@ -311,6 +493,105 @@ export default function AdminInviteCodesPage() {
           </div>
         )}
       </GlassCard>
+
+      {/* 推廣分享彈窗 */}
+      {shareModalItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-lg">
+            <GlassCard className="p-6 border border-white/10 shadow-2xl space-y-4 bg-zinc-950/90">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2 text-amber-400">
+                  <Share2 className="w-5 h-5" />
+                  <h3 className="text-base font-bold text-white">智慧邀請碼推廣分享</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShareModalItem(null)}
+                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* 邀請碼資訊 */}
+                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-zinc-400">邀請碼</span>
+                    <div className="font-mono font-bold text-amber-300 text-base">{shareModalItem.code}</div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs text-zinc-400">綁定分組</span>
+                    <div className="text-xs text-zinc-200 font-semibold">
+                      {shareModalItem.targetGroupNames?.[0] || "尚未綁定特定分組"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 專屬推廣連結 */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-zinc-300">專屬分享網址（自動帶碼）</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={getShareUrl(shareModalItem)}
+                      className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono text-zinc-300 bg-black/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(getShareUrl(shareModalItem), "modal-url")}
+                      className="px-3 py-2 rounded-xl glass-btn-primary flex items-center gap-1.5 text-xs shrink-0 font-semibold"
+                    >
+                      {copiedType === "modal-url" ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-300" />
+                          <span>已複製</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>複製連結</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 社群推廣短文 */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-zinc-300">LINE / 社群推廣短文</label>
+                  <textarea
+                    rows={4}
+                    readOnly
+                    value={getShareText(shareModalItem)}
+                    className="w-full p-3 rounded-xl glass-input text-xs text-zinc-300 bg-black/40 resize-none font-sans"
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(getShareText(shareModalItem), "modal-text")}
+                      className="px-4 py-2 rounded-xl glass-btn flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-white border-amber-500/30"
+                    >
+                      {copiedType === "modal-text" ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-300" />
+                          <span>已複製短文</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>複製推廣短文</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

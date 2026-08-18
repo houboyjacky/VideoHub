@@ -24,7 +24,7 @@ export default async function HomePage() {
       { shootingDate: "desc" },
       { publishedAt: "desc" },
     ],
-    take: 20,
+    take: 50,
     select: {
       id: true,
       ytId: true,

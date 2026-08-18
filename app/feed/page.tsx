@@ -2,8 +2,10 @@ import React from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { FeedClient } from "./FeedClient";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, KeyRound } from "lucide-react";
 import Link from "next/link";
+import { getAdminDisplayName } from "@/lib/admin-helper";
+import { RedeemInviteModal } from "@/components/layout/RedeemInviteModal";
 
 export default async function FeedPage() {
   const session = await auth();
@@ -18,22 +20,28 @@ export default async function FeedPage() {
 
   // 若非管理員且完全未被分配任何分組
   if (!isAdmin && userGroupIds.length === 0) {
+    const adminName = await getAdminDisplayName();
+
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center relative z-10">
-        <div className="glass-card rounded-2xl p-8 border border-white/10 shadow-2xl">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-4">
+        <div className="glass-card rounded-2xl p-8 border border-white/10 shadow-2xl space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-2">
             <ShieldAlert className="w-6 h-6 text-amber-400" />
           </div>
-          <h2 className="text-lg font-bold text-white mb-2">尚未分配分組</h2>
-          <p className="text-sm text-zinc-400 leading-relaxed mb-6">
-            您的帳號已審核通過，但管理員尚未為您分配影片分組權限。請稍後重試或直接與 Jacky 聯繫。
+          <h2 className="text-lg font-bold text-white">尚未分配分組</h2>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            您的帳號已審核通過，但目前尚未加入任何影片分組。若您持有特定分組的邀請碼，可直接兌換；或請直接與{" "}
+            <span className="text-amber-400 font-semibold">{adminName}</span> 聯繫。
           </p>
-          <Link
-            href="/"
-            className="inline-block py-2.5 px-6 rounded-xl glass-btn text-xs font-semibold text-zinc-300 hover:text-white"
-          >
-            返回首頁
-          </Link>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <RedeemInviteModal />
+            <Link
+              href="/"
+              className="py-2 px-5 rounded-xl glass-btn text-xs font-medium text-zinc-400 hover:text-white"
+            >
+              返回首頁
+            </Link>
+          </div>
         </div>
       </div>
     );

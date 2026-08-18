@@ -10,6 +10,7 @@ declare module "next-auth" {
       status: "unregistered" | "pending" | "approved" | "rejected" | string;
       isAdmin: boolean;
       groupIds: string[];
+      disabled?: boolean;
     } & DefaultSession["user"];
   }
 
@@ -17,6 +18,7 @@ declare module "next-auth" {
     status?: string;
     isAdmin?: boolean;
     groupIds?: string[];
+    disabled?: boolean;
   }
 }
 
@@ -28,5 +30,6 @@ declare module "next-auth/jwt" {
     status?: string;
     isAdmin?: boolean;
     groupIds?: string[];
+    disabled?: boolean;
   }
 }

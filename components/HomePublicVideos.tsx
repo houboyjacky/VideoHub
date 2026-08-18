@@ -9,9 +9,11 @@ import {
   Film,
   Lock,
   ArrowUpDown,
-  LayoutGrid,
-  GitCommit,
   ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 
@@ -24,7 +26,7 @@ interface PublicVideo {
   shootingDate?: string | Date | null;
 }
 
-// 🌟 核心時間萃取函式：優先取得拍攝時間 (shootingDate)，若無拍攝時間則取出發布/上傳時間 (publishedAt)
+// 核心時間萃取函式：優先取得拍攝時間 (shootingDate)，若無拍攝時間則取出發布/上傳時間 (publishedAt)
 function getEffectiveTimestamp(v: {
   shootingDate?: string | Date | null;
   publishedAt?: string | Date | null;
@@ -47,9 +49,6 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
   // 排序模式：預設由新到舊 ("desc")，支援切換為由舊到新 ("asc")
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
-  // 檢視模式：預設時間軸 ("timeline")，支援切換網格 ("grid")
-  const [viewMode, setViewMode] = useState<"timeline" | "grid">("timeline");
-
   // 依時間排序 (優先拍攝時間，若無則依發布/上傳時間)
   const sortedVideos = useMemo(() => {
     return [...videos].sort((a, b) => {
@@ -71,7 +70,7 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
   }, [displayedVideos]);
 
   // 單張時間軸卡片渲染函式
-  const renderTimelineCard = (video: PublicVideo, isLeft: boolean) => {
+  const renderTimelineCard = (video: PublicVideo, isLeft: boolean, index: number) => {
     const rawDate = video.shootingDate || video.publishedAt;
     const dateObj = rawDate ? new Date(rawDate) : null;
     const displayDate = dateObj
@@ -82,6 +81,7 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
         })
       : "未知日期";
     const isShooting = !!video.shootingDate;
+    const isFirstFeatured = index === 0;
 
     return (
       <div key={video.id} className="relative group">
@@ -89,7 +89,13 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
         {/* 左欄卡片：向右延伸至中軸 */}
         {isLeft && (
           <div className="hidden md:block absolute -right-6 lg:-right-8 top-8 w-6 lg:w-8 h-0.5 bg-gradient-to-r from-amber-500/80 to-amber-500/30 z-10">
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 rounded-full bg-[#0a0a0f] border-2 border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)] flex items-center justify-center">
+            <div
+              className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 rounded-full bg-[#0a0a0f] border-2 border-amber-400 flex items-center justify-center ${
+                isFirstFeatured
+                  ? "shadow-[0_0_12px_rgba(245,158,11,1)] ring-2 ring-amber-400/50"
+                  : "shadow-[0_0_8px_rgba(245,158,11,0.8)]"
+              }`}
+            >
               <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
             </div>
           </div>
@@ -98,7 +104,13 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
         {/* 右欄卡片：向左延伸至中軸 */}
         {!isLeft && (
           <div className="hidden md:block absolute -left-6 lg:-left-8 top-8 w-6 lg:w-8 h-0.5 bg-gradient-to-l from-amber-500/80 to-amber-500/30 z-10">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-[#0a0a0f] border-2 border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)] flex items-center justify-center">
+            <div
+              className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-[#0a0a0f] border-2 border-amber-400 flex items-center justify-center ${
+                isFirstFeatured
+                  ? "shadow-[0_0_12px_rgba(245,158,11,1)] ring-2 ring-amber-400/50"
+                  : "shadow-[0_0_8px_rgba(245,158,11,0.8)]"
+              }`}
+            >
               <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
             </div>
           </div>
@@ -106,13 +118,23 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
 
         {/* 行動版：向左延伸至左側軸線 */}
         <div className="md:hidden absolute -left-7 top-8 w-7 h-0.5 bg-gradient-to-l from-amber-500/80 to-amber-500/30 z-10">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#0a0a0f] border-2 border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+          <div
+            className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#0a0a0f] border-2 border-amber-400 ${
+              isFirstFeatured
+                ? "shadow-[0_0_12px_rgba(245,158,11,1)] ring-2 ring-amber-400/50"
+                : "shadow-[0_0_8px_rgba(245,158,11,0.8)]"
+            }`}
+          />
         </div>
 
         {/* 影片卡片主體 */}
         <div
           onClick={() => setActiveVideo(video)}
-          className="group glass-card rounded-2xl overflow-hidden border border-white/10 hover:border-amber-500/50 hover:scale-[1.01] transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-amber-500/10 cursor-pointer"
+          className={`group glass-card rounded-2xl overflow-hidden transition-all duration-300 shadow-xl hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-500/20 cursor-pointer ${
+            isFirstFeatured
+              ? "border-2 border-amber-500/60 shadow-[0_0_24px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/30"
+              : "border border-white/10 hover:border-amber-500/50"
+          }`}
         >
           {/* 拍攝時間與狀態 (影片上方) */}
           <div className="px-4 py-2.5 bg-white/[0.03] border-b border-white/5 flex items-center justify-between text-xs">
@@ -124,9 +146,17 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
               </span>
             </div>
 
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
-              🌐 公開試看
-            </span>
+            <div className="flex items-center gap-1.5">
+              {isFirstFeatured && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  <span>精選推薦</span>
+                </span>
+              )}
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
+                🌐 公開試看
+              </span>
+            </div>
           </div>
 
           {/* 影片縮圖 (16:9) */}
@@ -144,8 +174,8 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
             <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent opacity-60 group-hover:opacity-30 transition-opacity" />
 
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-11 h-11 rounded-full bg-amber-500 text-black flex items-center justify-center shadow-lg shadow-amber-500/30 opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300">
-                <Play className="w-4 h-4 fill-current ml-0.5" />
+              <div className="w-12 h-12 rounded-full bg-amber-500 text-black flex items-center justify-center shadow-lg shadow-amber-500/40 opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300">
+                <Play className="w-5 h-5 fill-current ml-0.5" />
               </div>
             </div>
           </div>
@@ -172,7 +202,7 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
           <div className="flex items-center gap-2">
             <Film className="w-5 h-5 text-amber-400" />
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              精選公開影音專區 (Featured Public Videos)
+              精選公開影音時間軸 (Featured Public Videos)
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-zinc-400">
@@ -187,144 +217,58 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
             onClick={() =>
               setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))
             }
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-200 hover:text-white border border-white/10 transition-all font-medium text-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-200 hover:text-white border border-white/10 transition-all font-medium text-xs cursor-pointer shadow-sm"
             title="切換時間排序"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-amber-400" />
             <span>{sortOrder === "desc" ? "📅 由新到舊" : "📅 由舊到新"}</span>
           </button>
-
-          {/* 模式切換：時間軸 vs 網格 */}
-          <div className="flex items-center p-0.5 rounded-xl bg-black/40 border border-white/10">
-            <button
-              type="button"
-              onClick={() => setViewMode("timeline")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
-                viewMode === "timeline"
-                  ? "bg-amber-500 text-black font-semibold shadow-sm"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-              title="時間軸檢視"
-            >
-              <GitCommit className="w-3.5 h-3.5" />
-              <span>時間軸</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
-                viewMode === "grid"
-                  ? "bg-amber-500 text-black font-semibold shadow-sm"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-              title="網格圖卡檢視"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>網格</span>
-            </button>
-          </div>
-
-          {videos.length > 6 && (
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="px-3.5 py-1.5 rounded-xl glass-btn text-xs font-semibold text-amber-300 hover:text-white transition-all ml-1 cursor-pointer"
-            >
-              {showAll ? "精選 6 部" : `全部 (${videos.length})`}
-            </button>
-          )}
         </div>
       </div>
 
-      {/* 公開影片展示區域 */}
-      {viewMode === "timeline" ? (
-        /* 🌟 時間軸佈局 (中央時間軸 + 雙欄左右交錯緊湊排列) */
-        <div className="relative py-4">
-          {/* 中央縱向時間軸線 (桌面版置中，行動版靠左) */}
-          <div className="absolute left-3.5 md:left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-amber-500/70 via-amber-500/30 to-amber-500/5 shadow-[0_0_8px_rgba(245,158,11,0.3)]" />
+      {/* 🌟 單一極簡時間軸佈局 (中央時間軸 + 雙欄左右交錯緊湊排列) */}
+      <div className="relative py-4">
+        {/* 中央縱向時間軸線 (桌面版置中，行動版靠左) */}
+        <div className="absolute left-3.5 md:left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-amber-500/70 via-amber-500/30 to-amber-500/5 shadow-[0_0_8px_rgba(245,158,11,0.3)]" />
 
-          {/* 雙欄交錯佈局 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-7 md:pl-0">
-            {/* 左欄影片 (偶數項) */}
-            <div className="space-y-6 md:pr-6 lg:pr-8">
-              {leftColumnVideos.map((video) =>
-                renderTimelineCard(video, true)
-              )}
-            </div>
+        {/* 雙欄交錯佈局 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-7 md:pl-0">
+          {/* 左欄影片 (偶數項) */}
+          <div className="space-y-6 md:pr-6 lg:pr-8">
+            {leftColumnVideos.map((video, idx) =>
+              renderTimelineCard(video, true, idx * 2)
+            )}
+          </div>
 
-            {/* 右欄影片 (奇數項，適度頂部偏移達成左右交錯) */}
-            <div className="space-y-6 md:pl-6 lg:pl-8 md:pt-16 lg:pt-20">
-              {rightColumnVideos.map((video) =>
-                renderTimelineCard(video, false)
-              )}
-            </div>
+          {/* 右欄影片 (奇數項，適度頂部偏移達成左右交錯) */}
+          <div className="space-y-6 md:pl-6 lg:pl-8 md:pt-16 lg:pt-20">
+            {rightColumnVideos.map((video, idx) =>
+              renderTimelineCard(video, false, idx * 2 + 1)
+            )}
           </div>
         </div>
-      ) : (
-        /* 網格圖卡佈局 */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {displayedVideos.map((video) => {
-            const rawDate = video.shootingDate || video.publishedAt;
-            const dateStr = rawDate
-              ? new Date(rawDate).toLocaleDateString("zh-TW", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                })
-              : "未知日期";
+      </div>
 
-            return (
-              <div
-                key={video.id}
-                onClick={() => setActiveVideo(video)}
-                className="group glass-card rounded-2xl overflow-hidden flex flex-col cursor-pointer border border-white/10 hover:border-amber-500/40 hover:scale-[1.02] transition-all duration-300 shadow-lg"
-              >
-                {/* 縮圖區域 */}
-                <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
-                  <img
-                    src={video.thumbnail || "/images/default-thumbnail.jpg"}
-                    alt={video.title}
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/images/default-thumbnail.jpg";
-                    }}
-                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                  />
-
-                  {/* 播放按鈕 */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-amber-500 text-black flex items-center justify-center shadow-lg shadow-amber-500/30 opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300">
-                      <Play className="w-5 h-5 fill-current ml-0.5" />
-                    </div>
-                  </div>
-
-                  {/* 狀態徽章 */}
-                  <div className="absolute top-2.5 left-2.5">
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
-                      🌐 公開免登入
-                    </span>
-                  </div>
-                </div>
-
-                {/* 資訊區 */}
-                <div className="p-4 flex flex-col justify-between flex-1 space-y-2">
-                  <h3 className="font-semibold text-sm text-zinc-100 line-clamp-2 group-hover:text-amber-300 transition-colors leading-snug">
-                    {video.title}
-                  </h3>
-
-                  <div className="flex items-center justify-between text-xs text-zinc-500 pt-1 font-mono">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-zinc-500" />
-                      <span>{dateStr}</span>
-                    </div>
-                    <span className="text-amber-400/80 group-hover:text-amber-300 text-[11px] flex items-center gap-1 font-medium">
-                      點擊播放
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+      {/* 展開更多公開影片按鈕（超過 6 部時顯示） */}
+      {videos.length > 6 && (
+        <div className="text-center pt-2">
+          <button
+            type="button"
+            onClick={() => setShowAll(!showAll)}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl glass-btn text-xs sm:text-sm font-bold text-amber-300 hover:text-white border-amber-500/30 hover:border-amber-500/60 shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 transition-all cursor-pointer hover:scale-[1.02]"
+          >
+            {showAll ? (
+              <>
+                <ChevronUp className="w-4 h-4" />
+                <span>收合公開影片清單（精選 6 部）</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                <span>展開更多公開影片（還有 {videos.length - 6} 部）</span>
+              </>
+            )}
+          </button>
         </div>
       )}
 
@@ -404,4 +348,3 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
     </div>
   );
 }
-
