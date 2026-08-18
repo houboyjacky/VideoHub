@@ -4,30 +4,64 @@
 
 ---
 
+## [1.1.4] - 2026-08-19
+
+### 📜 系統活動日誌永久全量留存 (Audit Logs)
+- **活動日誌策略升級為「永久全量保存」**：
+  - 關閉後端自動修剪機制，每一筆使用者登入、登出、註冊申請、兌換解鎖、安全鎖定與審核紀錄永久 100% 留存於 MongoDB。
+  - 持續保持後台無清空按鈕與 `DELETE /api/admin/logs` 403 禁用，確保日誌防篡改與最高法律審計效力。
+  - 後台日誌介面標籤更新為「🟢 永久全量保存」，預設載入 50 筆保證極速瀏覽，搜尋時直查全庫所有歷史紀錄。
+
+---
+
+## [1.1.3] - 2026-08-19
+
+### 🔒 安全防禦與頻率限制 (Security & Hardening)
+- **邀請碼防暴力猜測與安全冷卻鎖定 (Rate Limiting & Lockout)**：
+  - 建立專屬 Rate Limiter 模組（`lib/rate-limiter.ts`），支援 **Session 帳號（Email）與 Client 來源 IP** 雙重安全綁定。
+  - 10 分鐘內連續輸入錯誤邀請碼達 5 次時，立即觸發 15 分鐘安全冷卻鎖定（HTTP 429）。
+  - **隱蔽式安全提示**：對使用者維持安全簡潔錯誤提示，不向外部透露倒數秒數與剩餘次數，防止惡意探測。
+  - **完整審計日誌**：於後台「系統活動日誌」精確記錄每一次輸錯、觸發鎖定與冷卻期間的攔截軌跡。
+  - **成功自動重置**：使用者只要輸入正確邀請碼成功兌換或註冊，失敗計數與鎖定狀態立即自動歸零。
+- **TDD 測試日誌隔離加固 (Test Prefix Isolation & Targeted Teardown)**：
+  - 測試產生的所有日誌採用專屬時間戳前綴沙盒隔離，Teardown 時 100% 精確抹除測試資料，絕不擠壓或誤刪生產環境真實用戶日誌。
+
+---
+
+## [1.1.2] - 2026-08-19
+
+### 🔍 資料庫直查搜尋與 ORM 存取層強化 (Database Search & ORM)
+- **活動日誌資料庫級別即時直查 (Server-Side DB Search)**：
+  - 後端 API 與前端搜尋升級為資料庫級別即時直查，打破原先僅限於前端 50 筆快取的過濾限制，可自全庫撈取數百筆相符歷史記錄。
+  - 前端加入 350ms 防抖搜尋機制、Loading 轉圈動畫反饋與「🔍 找到 X 筆相符歷史紀錄」統計提示。
+- **ORM 資料存取層模糊查詢支援 (lib/prisma.ts)**：
+  - 在原生 MongoDB 存取層 `parseWhere` 補齊 `startsWith`、`endsWith`、`contains` 與 `mode: "insensitive"` 正則自動轉換與字元轉義，徹底杜絕 ReDoS 注入。
+
+---
+
+## [1.1.1] - 2026-08-19
+
+### 🚀 個人資料自主管理與架構修復 (User Profile & Architecture)
+- **使用者個人稱呼隨時修改功能**：
+  - 新增後端 `PATCH /api/user/profile` API，並在前端導航列頭像旁整合「✏️ 修改稱呼」彈窗，使用者可隨時自主更新顯示名稱。
+- **全站 SessionProvider 包覆與 SSR 渲染加固**：
+  - 建立全站 `AuthProvider` 元件，修復 Next.js SSR 階段因 `useSession` 上下文未注入導致的 500 錯誤。
+
+---
+
 ## [1.1.0] - 2026-08-19
 
-### 🚀 新增功能 (Features)
+### 🚀 次版本重大功能發布 (Minor Release)
 - **分組隨機 10 碼短分享 ID 系統 (Random Share ID)**：
-  - 分組新增 10 碼隨機 URL-safe 識別碼（`shareId`），隱蔽 MongoDB 底層 ObjectId，支援分組公開展示頁（`/share/group/[shareId]`）與 Open Graph 社交動態預覽圖片生成（`/api/og/group/[shareId]`）。
-- **免審核邀請碼自動解鎖與歡迎信系統 (Auto-Approve & Welcome Email)**：
-  - 邀請碼支援 `autoApprove: true`，訪客或會員輸入後自動開通分組權限，並由系統即時寄送專屬 HTML 歡迎通知信。
-- **使用者個人稱呼隨時修改 (User Profile Name Update)**：
-  - 後端新增 `PATCH /api/user/profile` API，並於前端導航列頭像旁整合「✏️ 修改稱呼」彈窗，使用者可隨時自主更新顯示名稱。
+  - 分組新增 10 碼隨機 URL-safe 識別碼（`shareId`），隱蔽 MongoDB 底層 ObjectId，支援公開展示頁（`/share/group/[shareId]`）與 Open Graph 社交動態預覽圖片生成（`/api/og/group/[shareId]`）。
+- **免審核邀請碼自動解鎖與即時歡迎信 (Auto-Approve & Welcome Email)**：
+  - 邀請碼支援 `autoApprove: true`，輸入即自動開通對應分組並即時寄發精美 HTML 歡迎信。
 - **註冊頁智慧自動預填 (Smart Auto-Fill Registration)**：
-  - 進入 `/register` 自動預填 Google 帳號名稱，並自動解析網址 `?code=` 與 `?invite=` 參數帶入邀請碼；已核准會員進入自動導向動態牆 `/feed`。
+  - 註冊頁自動帶入 Google 帳號姓名，並自 URL `?code=` 自動預填邀請碼；已核准會員進入自動導向動態牆 `/feed`。
 - **影片庫管理快速播放通道**：
-  - 影片管理列表中，編輯鉛筆旁新增「在外部新分頁播放」專屬按鈕，便於管理員即時校驗影片狀態。
-
-### 🔒 安全性與防禦加固 (Security & Hardening)
-- **邀請碼防暴力猜測與安全鎖定機制 (Rate Limiting & Anti-Brute Force)**：
-  - 整合 Session Email 與 Client IP 雙重限制，連續輸入錯誤邀請碼達 5 次立即觸發 15 分鐘安全冷卻鎖定。
-  - 對使用者維持安全簡潔提示（不透露倒數與剩餘次數），並於後台活動日誌中完整記錄鎖定與錯誤軌跡。
-- **邀請碼刪除防護規則 (Safe Delete Rules)**：
+  - 影片管理列表中，編輯鉛筆旁新增「在外部新分頁播放」專屬按鈕。
+- **邀請碼刪除安全防護規則 (Safe Delete Rules)**：
   - 邀請碼必須處於「已停用 (disabled: true)」狀態方可執行刪除，杜絕誤刪進行中的有效邀請碼。
-- **系統活動日誌永久全量保存與資料庫直查 (Permanent Logs Retention & DB Search)**：
-  - 系統活動日誌改為永久全量保存、防清空防篡改；搜尋框升級為 350ms 防抖之資料庫級別全文模糊直查，打破 50 筆快取限制。
-- **TDD 測試日誌隔離加固 (Test Prefix Isolation & Targeted Teardown)**：
-  - 測試日誌採用嚴格前綴沙盒隔離，執行完畢 100% 精確清除假資料，絕不波及生產環境真實日誌。
 
 ---
 
