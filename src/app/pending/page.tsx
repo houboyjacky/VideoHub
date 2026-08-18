@@ -4,7 +4,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Clock, ShieldAlert, LogOut, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
-import { getAdminDisplayName } from "@/lib/admin-helper";
+import { getAppBrandConfig } from "@/lib/application/use-cases/system-settings.usecase";
 
 export default async function PendingPage() {
   const session = await auth();
@@ -12,7 +12,7 @@ export default async function PendingPage() {
   const status = user?.status || "pending";
   const isRejected = status === "rejected";
   const isApproved = status === "approved";
-  const adminName = await getAdminDisplayName();
+  const { adminName } = await getAppBrandConfig();
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 relative z-10">

@@ -4,6 +4,20 @@
 
 ---
 
+## [1.1.16] - 2026-08-19
+
+### 🎨 全站動態品牌與 .env.local 完整聯動 (Dynamic Branding & Env Sync)
+- **動態品牌解析器 (`getAppBrandConfig`)**：
+  - 建立全站統一的品牌、管理者稱呼與客服信箱讀取器，遵循「1. 後台資料庫設定 ➜ 2. `.env.local` ➜ 3. 系統內建預設值」三層回退架構。
+- **全站前台頁面全面串接**：
+  - 頂部導航 (`Navbar`)、全站頁尾 (`Footer`)、首頁 (`HomePage`)、應用政策 (`About`)、隱私權 (`Privacy`)、條款 (`Terms`)、審核中 (`Pending`) 與註冊頁 (`Register`) 全部無縫串接動態品牌與客服信箱。
+- **公開品牌端點 (`GET /api/system/brand`)**：
+  - 提供輕量公開 API，供客戶端頁面即時取得最新品牌與客服信箱，免重新編譯即可即時反映變更。
+- **Docker 環境變數傳遞修復**：
+  - 解決 `docker-compose.yml` 預設展開覆蓋 `env_file` 的衝突，確保 `.env.local` 之 `NEXT_PUBLIC_APP_NAME`、`NEXT_PUBLIC_CONTACT_EMAIL` 與 `ADMIN_EMAILS` 100% 正確注入容器。
+
+---
+
 ## [1.1.15] - 2026-08-19
 
 ### 📂 原始碼結構全面收納至 `src/` (Source Code Migration)

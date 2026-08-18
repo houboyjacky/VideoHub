@@ -5,6 +5,8 @@ import { auth } from "@/auth";
 import type { Metadata } from "next";
 import { ShareGroupClient } from "@/components/share/ShareGroupClient";
 
+import { getAppBrandConfig } from "@/lib/application/use-cases/system-settings.usecase";
+
 export const dynamic = "force-dynamic";
 
 interface Props {
@@ -14,7 +16,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { shareId } = await params;
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || "VideoHub";
+  const { appName } = await getAppBrandConfig();
   const siteUrl = process.env.NEXTAUTH_URL || "https://your-domain.com";
 
   const group = await prisma.group.findFirst({

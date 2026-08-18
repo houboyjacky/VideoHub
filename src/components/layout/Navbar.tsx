@@ -5,6 +5,8 @@ import { Shield, LogOut, Video, Sparkles, Edit3 } from "lucide-react";
 import { RedeemInviteModal } from "./RedeemInviteModal";
 import { EditProfileModal } from "./EditProfileModal";
 
+import { getAppBrandConfig } from "@/lib/application/use-cases/system-settings.usecase";
+
 export async function Navbar() {
   const session = await auth();
   const user = session?.user;
@@ -12,6 +14,8 @@ export async function Navbar() {
   if (!user || user.status !== "approved") {
     return null;
   }
+
+  const { appName } = await getAppBrandConfig();
 
   return (
     <header className="sticky top-0 z-50 w-full glass-panel border-b border-white/10 bg-[#0a0a0f]/80 backdrop-blur-xl">
@@ -23,11 +27,11 @@ export async function Navbar() {
         >
           <img
             src="/logo.svg"
-            alt={process.env.NEXT_PUBLIC_APP_NAME || "VideoHub"}
+            alt={appName}
             className="w-8 h-8 rounded-lg shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-all"
           />
           <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-            {process.env.NEXT_PUBLIC_APP_NAME || "VideoHub"}
+            {appName}
           </span>
         </Link>
 

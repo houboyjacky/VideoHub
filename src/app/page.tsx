@@ -9,10 +9,12 @@ import {
   ExternalLink,
 } from "lucide-react";
 
+import { getAppBrandConfig } from "@/lib/application/use-cases/system-settings.usecase";
+
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || "VideoHub";
+  const { appName } = await getAppBrandConfig();
 
   // 查詢公開可見之影音清單供首頁公開試看
   const rawPublicVideos = await prisma.video.findMany({

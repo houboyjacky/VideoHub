@@ -3,6 +3,7 @@ import { recordActivityLog } from "@/lib/audit-log";
 import { sendEmail } from "@/lib/email";
 import { buildTestEmailHtml } from "@/lib/domains/notification/templates";
 import { maskSecret } from "@/lib/domains/notification/mailer-types";
+import { getAdminDisplayName } from "@/lib/domains/identity/admin-policy";
 
 export interface SystemSettingsDTO {
   // 品牌與外觀
@@ -54,10 +55,10 @@ export async function getSystemSettingsUseCase(): Promise<SystemSettingsDTO> {
     console.warn("[SystemSettings] Failed to fetch DB config, fallback to env:", err);
   }
 
-  // 1. 品牌外觀
+  // 1. 品牌外觀 (優先讀取 DB，若無則讀取 process.env，若無則回退預設)
   const appName = dbConfig.appName?.trim() || process.env.NEXT_PUBLIC_APP_NAME || "VideoHub";
-  const adminName = dbConfig.adminName?.trim() || process.env.NEXT_PUBLIC_ADMIN_NAME || "管理員";
-  const contactEmail = dbConfig.contactEmail?.trim() || process.env.NEXT_PUBLIC_CONTACT_EMAIL || "";
+  const adminName = dbConfig.adminName?.trim() || (await getAdminDisplayName());
+  const contactEmail = dbConfig.contactEmail?.trim() || process.env.NEXT_PUBLIC_CONTACT_EMAIL || process.env.CONTACT_EMAIL || "";
 
   // 2. YouTube
   const youtubeApiKey = dbConfig.youtubeApiKey?.trim() || process.env.YOUTUBE_API_KEY || "";
@@ -101,6 +102,22 @@ export async function getSystemSettingsUseCase(): Promise<SystemSettingsDTO> {
       smtp: Boolean(dbConfig.smtpUser || dbConfig.smtpPass),
       resend: Boolean(dbConfig.resendApiKey),
     },
+  };
+}
+
+/**
+ * 取得當前網站品牌與聯絡資訊（輕量級）
+ */
+export async function getAppBrandConfig(): Promise<{
+  appName: string;
+  adminName: string;
+  contactEmail: string;
+}> {
+  const settings = await getSystemSettingsUseCase();
+  return {
+    appName: settings.appName,
+    adminName: settings.adminName,
+    contactEmail: settings.contactEmail,
   };
 }
 

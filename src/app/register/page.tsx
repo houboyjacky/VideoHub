@@ -8,6 +8,16 @@ import { KeyRound, User, Sparkles, Loader2, AlertCircle, CheckCircle2 } from "lu
 
 function RegisterForm() {
   const router = useRouter();
+  const [appName, setAppName] = useState<string>(process.env.NEXT_PUBLIC_APP_NAME || "VideoHub");
+
+  useEffect(() => {
+    fetch("/api/system/brand")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.appName) setAppName(data.appName);
+      })
+      .catch(() => {});
+  }, []);
   const searchParams = useSearchParams();
   const sessionResult = useSession?.();
   const session = sessionResult?.data;
@@ -105,7 +115,7 @@ function RegisterForm() {
               <Sparkles className="w-6 h-6 text-amber-400" />
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              歡迎加入 {process.env.NEXT_PUBLIC_APP_NAME || "VideoHub"}
+              歡迎加入 {appName}
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400">
               請確認您的稱呼並輸入通行邀請碼以完成加入

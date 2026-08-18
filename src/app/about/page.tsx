@@ -19,8 +19,18 @@ import {
 
 export default function AboutAndApiDisclosurePage() {
   const [lang, setLang] = useState<"zh" | "en">("zh");
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || "VideoHub";
-  const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "contact@your-domain.com";
+  const [appName, setAppName] = useState<string>(process.env.NEXT_PUBLIC_APP_NAME || "VideoHub");
+  const [contactEmail, setContactEmail] = useState<string>(process.env.NEXT_PUBLIC_CONTACT_EMAIL || "contact@your-domain.com");
+
+  React.useEffect(() => {
+    fetch("/api/system/brand")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.appName) setAppName(data.appName);
+        if (data.contactEmail) setContactEmail(data.contactEmail);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10 animate-fade-in space-y-8">

@@ -14,6 +14,8 @@ import {
   ScrollText,
 } from "lucide-react";
 
+import { getAppBrandConfig } from "@/lib/application/use-cases/system-settings.usecase";
+
 export default async function AdminLayout({
   children,
 }: {
@@ -23,6 +25,8 @@ export default async function AdminLayout({
   if (!session?.user?.isAdmin) {
     redirect("/feed");
   }
+
+  const { appName } = await getAppBrandConfig();
 
   const navItems = [
     { label: "儀表板總覽", href: "/admin", icon: LayoutDashboard },
@@ -45,7 +49,7 @@ export default async function AdminLayout({
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              {process.env.NEXT_PUBLIC_APP_NAME || "VideoHub"} 管理後台
+              {appName} 管理後台
             </h1>
             <p className="text-xs text-zinc-400">
               管理邀請碼、用戶審核、影片內容與權限分組
