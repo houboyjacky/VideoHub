@@ -23,6 +23,7 @@ import {
   Monitor,
   Apple,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 
 interface ActivityLogItem {
@@ -45,18 +46,25 @@ export default function AdminLogsPage() {
   const [logs, setLogs] = useState<ActivityLogItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [searching, setSearching] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedAction, setSelectedAction] = useState<string>("all");
 
-  const fetchLogs = async (isManual = false) => {
+  const fetchLogs = async (query = searchQuery, action = selectedAction, isManual = false) => {
     try {
       if (isManual) setRefreshing(true);
+      else if (query.trim()) setSearching(true);
       else setLoading(true);
       setError(null);
 
-      const res = await fetch(`/api/admin/logs?limit=50&action=${selectedAction}&search=${encodeURIComponent(searchQuery)}`);
+      const params = new URLSearchParams();
+      if (query.trim()) params.set("search", query.trim());
+      if (action && action !== "all") params.set("action", action);
+      params.set("limit", query.trim() ? "500" : "50");
+
+      const res = await fetch(`/api/admin/logs?${params.toString()}`);
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || "無法取得活動日誌");
@@ -66,29 +74,26 @@ export default function AdminLogsPage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setSearching(false);
     }
   };
 
+  // 1. 切換動作篩選時立即重查
   useEffect(() => {
-    fetchLogs();
+    fetchLogs(searchQuery, selectedAction);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAction]);
 
-  // 即時搜尋過濾（支援防抖/即時比對）
-  const filteredLogs = useMemo(() => {
-    if (!searchQuery.trim()) return logs;
-    const q = searchQuery.toLowerCase().trim();
-    return logs.filter((log) => {
-      const matchEmail = log.email.toLowerCase().includes(q);
-      const matchName = (log.name || "").toLowerCase().includes(q);
-      const matchIp = (log.ip || "").toLowerCase().includes(q);
-      const matchOs = (log.os || "").toLowerCase().includes(q);
-      const matchBrowser = (log.browser || "").toLowerCase().includes(q);
-      const matchDetails = (log.details || "").toLowerCase().includes(q);
-      const matchAction = log.action.toLowerCase().includes(q);
-      return matchEmail || matchName || matchIp || matchOs || matchBrowser || matchDetails || matchAction;
-    });
-  }, [logs, searchQuery]);
+  // 2. 搜尋關鍵字防抖直查資料庫 (350ms Debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchLogs(searchQuery, selectedAction);
+    }, 350);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
+  const filteredLogs = logs;
 
   // 格式化相對時間
   const formatRelativeTime = (dateStr: string) => {
@@ -233,7 +238,7 @@ export default function AdminLogsPage() {
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             type="button"
-            onClick={() => fetchLogs(true)}
+            onClick={() => fetchLogs(searchQuery, selectedAction, true)}
             disabled={loading || refreshing}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl glass-btn text-xs font-medium text-zinc-300 hover:text-white transition-all cursor-pointer disabled:opacity-50"
             title="重新整理日誌"
@@ -267,20 +272,23 @@ export default function AdminLogsPage() {
             <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="搜尋 Email、姓名、IP、作業系統 (如: Windows 11, iOS, macOS) 或說明..."
+              placeholder="從資料庫即時搜尋 Email、姓名、IP、作業系統或說明 (不限 50 筆)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-500/50"
+              className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-500/50"
             />
-            {searchQuery && (
+            {searching ? (
+              <Loader2 className="w-4 h-4 animate-spin text-amber-400 absolute right-3 top-1/2 -translate-y-1/2" />
+            ) : searchQuery ? (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white text-xs"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-xs p-1 cursor-pointer"
+                title="清除搜尋"
               >
                 ✕
               </button>
-            )}
+            ) : null}
           </div>
 
           {/* 動作類型篩選按鈕組 */}
@@ -306,6 +314,21 @@ export default function AdminLogsPage() {
             ))}
           </div>
         </div>
+
+        {searchQuery.trim() && (
+          <div className="flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-white/5 animate-fade-in">
+            <span>
+              🔍 資料庫即時搜尋：找到 <strong className="text-amber-400 font-semibold">{logs.length}</strong> 筆相符歷史紀錄
+            </span>
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="text-amber-400 hover:text-amber-300 transition-colors cursor-pointer text-[11px]"
+            >
+              ✕ 清除搜尋並顯示最新 50 筆
+            </button>
+          </div>
+        )}
       </GlassCard>
 
       {/* 日誌表格清單 */}

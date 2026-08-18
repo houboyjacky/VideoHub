@@ -17,37 +17,28 @@ export async function GET(req: Request) {
       where.action = action;
     }
 
-    // 取得最新日誌
-    let logs = await prisma.activityLog.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: 200, // 先取多筆以便進行關鍵字篩選
-    });
-
-    // 關鍵字搜尋過濾 (支援姓名、Email、IP、作業系統 OS、瀏覽器、詳細說明)
     if (search) {
-      logs = logs.filter((log) => {
-        const text = [
-          log.email,
-          log.name || "",
-          log.ip || "",
-          log.os || "",
-          log.browser || "",
-          log.details || "",
-          log.action,
-        ]
-          .join(" ")
-          .toLowerCase();
-        return text.includes(search);
-      });
+      where.OR = [
+        { email: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: "insensitive" } },
+        { ip: { contains: search, mode: "insensitive" } },
+        { os: { contains: search, mode: "insensitive" } },
+        { browser: { contains: search, mode: "insensitive" } },
+        { details: { contains: search, mode: "insensitive" } },
+        { action: { contains: search, mode: "insensitive" } },
+      ];
     }
 
-    // 限制回傳指定筆數 (預設 50 筆)
-    const resultLogs = logs.slice(0, limit);
+    // 直接從資料庫撈取（若有搜尋條件直查全庫最多 500 筆，無搜尋時預設載入最新 50 筆）
+    const logs = await prisma.activityLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: search ? 500 : limit,
+    });
 
     return NextResponse.json({
       success: true,
-      logs: resultLogs,
+      logs,
       total: logs.length,
     });
   } catch (error) {
