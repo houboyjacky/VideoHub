@@ -7,7 +7,6 @@ import {
   ScrollText,
   Search,
   RefreshCw,
-  Trash2,
   LogIn,
   LogOut,
   UserPlus,
@@ -50,7 +49,6 @@ export default function AdminLogsPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedAction, setSelectedAction] = useState<string>("all");
-  const [clearing, setClearing] = useState<boolean>(false);
 
   const fetchLogs = async (isManual = false) => {
     try {
@@ -91,25 +89,6 @@ export default function AdminLogsPage() {
       return matchEmail || matchName || matchIp || matchOs || matchBrowser || matchDetails || matchAction;
     });
   }, [logs, searchQuery]);
-
-  const handleClearLogs = async () => {
-    if (!confirm("確定要清空所有活動日誌紀錄嗎？此動作無法復原。")) return;
-
-    try {
-      setClearing(true);
-      setError(null);
-      const res = await fetch("/api/admin/logs", { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "清空日誌失敗");
-
-      setSuccess("已成功清空活動日誌！");
-      setLogs([]);
-    } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-    } finally {
-      setClearing(false);
-    }
-  };
 
   // 格式化相對時間
   const formatRelativeTime = (dateStr: string) => {
@@ -241,9 +220,13 @@ export default function AdminLogsPage() {
             <h2 className="text-xl font-bold text-white tracking-tight">
               系統活動日誌 (Activity Logs)
             </h2>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-medium">
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>自動循環保留最新 50 筆</span>
+            </span>
           </div>
           <p className="text-xs text-zinc-400">
-            追蹤最新 50 筆使用者登入、登出、註冊申請與管理員審核紀錄，包含作業系統、IP 與瀏覽器資訊。
+            永久追蹤記錄使用者登入、登出、註冊申請、兌換與管理員審核紀錄。系統採用自動循環保留機制（恆定嚴格保留最新 50 筆），防篡改且不可手動清空。
           </p>
         </div>
 
@@ -258,19 +241,6 @@ export default function AdminLogsPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-amber-400" : ""}`} />
             <span>重新整理</span>
           </button>
-
-          {logs.length > 0 && (
-            <button
-              type="button"
-              onClick={handleClearLogs}
-              disabled={clearing}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-              title="清空歷史紀錄"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>清空紀錄</span>
-            </button>
-          )}
         </div>
       </div>
 

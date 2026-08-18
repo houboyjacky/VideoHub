@@ -56,18 +56,12 @@ export async function GET(req: Request) {
   }
 }
 
+// DELETE: 禁止手動清空活動日誌（由系統自動恆定維護最新 50 筆）
 export async function DELETE() {
-  const check = await requireAdmin();
-  if (!check.authorized) return check.response;
-
-  try {
-    const result = await prisma.activityLog.deleteMany({ where: {} });
-    return NextResponse.json({
-      success: true,
-      message: `已清空 ${result.count} 筆歷史活動日誌`,
-    });
-  } catch (error) {
-    console.error("[Admin Activity Logs DELETE Error]:", error);
-    return NextResponse.json({ error: "清空活動日誌失敗" }, { status: 500 });
-  }
+  return NextResponse.json(
+    {
+      error: "系統活動日誌由系統自動恆定維護最新 50 筆，禁止手動清空以確保審計日誌之完整性與防篡改性。",
+    },
+    { status: 403 }
+  );
 }

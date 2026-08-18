@@ -144,6 +144,12 @@ const parseWhere = (where: any = {}) => {
             ObjectId.isValid(id) ? new ObjectId(id) : id
           ),
         };
+      } else if (typeof val === "object" && val !== null && (val as any).notIn) {
+        query._id = {
+          $nin: (val as any).notIn.map((id: string) =>
+            ObjectId.isValid(id) ? new ObjectId(id) : id
+          ),
+        };
       } else {
         query.id = val;
       }
@@ -156,8 +162,22 @@ const parseWhere = (where: any = {}) => {
         query[key] = { $in: (val as any).hasSome };
       } else if ((val as any).in !== undefined) {
         query[key] = { $in: (val as any).in };
+      } else if ((val as any).notIn !== undefined) {
+        query[key] = { $nin: (val as any).notIn };
       } else if ((val as any).not !== undefined) {
         query[key] = { $ne: (val as any).not };
+      } else if (
+        (val as any).lt !== undefined ||
+        (val as any).lte !== undefined ||
+        (val as any).gt !== undefined ||
+        (val as any).gte !== undefined
+      ) {
+        const range: any = {};
+        if ((val as any).lt !== undefined) range.$lt = (val as any).lt;
+        if ((val as any).lte !== undefined) range.$lte = (val as any).lte;
+        if ((val as any).gt !== undefined) range.$gt = (val as any).gt;
+        if ((val as any).gte !== undefined) range.$gte = (val as any).gte;
+        query[key] = range;
       } else {
         query[key] = val;
       }

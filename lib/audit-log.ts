@@ -16,7 +16,38 @@ export interface LogEventParams {
 }
 
 /**
+ * 自動修剪歷史活動日誌，嚴格恆定保留最新 50 筆
+ */
+export async function pruneActivityLogs(maxKeep: number = 50): Promise<void> {
+  try {
+    const totalCount = await prisma.activityLog.count();
+    if (totalCount <= maxKeep) {
+      return;
+    }
+
+    // 取得需要保留的最新 maxKeep 筆 ID
+    const logsToKeep = await prisma.activityLog.findMany({
+      select: { id: true },
+      orderBy: { createdAt: "desc" },
+      take: maxKeep,
+    });
+
+    const keepIds = logsToKeep.map((l) => l.id);
+
+    // 刪除所有不在最新保留清單中的日誌記錄
+    await prisma.activityLog.deleteMany({
+      where: {
+        id: { notIn: keepIds },
+      },
+    });
+  } catch (err) {
+    console.error("[PruneActivityLogs Error]:", err);
+  }
+}
+
+/**
  * 安全非同步記錄系統活動日誌（絕不因日誌寫入異常而中斷使用者主要業務流程）
+ * 並自動維持資料庫恆定保留最新 50 筆
  */
 export async function recordActivityLog(params: LogEventParams): Promise<void> {
   try {
@@ -62,6 +93,9 @@ export async function recordActivityLog(params: LogEventParams): Promise<void> {
         createdAt: new Date(),
       },
     });
+
+    // 寫入後自動修剪超過 50 筆的舊日誌
+    await pruneActivityLogs(50);
   } catch (err) {
     console.error("[RecordActivityLog Error]:", err);
   }
