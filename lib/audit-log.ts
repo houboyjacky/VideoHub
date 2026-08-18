@@ -93,9 +93,6 @@ export async function recordActivityLog(params: LogEventParams): Promise<void> {
         createdAt: new Date(),
       },
     });
-
-    // 寫入後自動修剪超過 50 筆的舊日誌
-    await pruneActivityLogs(50);
   } catch (err) {
     console.error("[RecordActivityLog Error]:", err);
   }

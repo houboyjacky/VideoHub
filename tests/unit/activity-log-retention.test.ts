@@ -1,9 +1,9 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/lib/prisma";
-import { recordActivityLog, pruneActivityLogs } from "@/lib/audit-log";
+import { recordActivityLog } from "@/lib/audit-log";
 
-describe("活動日誌 50 筆自動保留與防清空機制測試 (Unit: Activity Log Retention & Anti-Wipe)", () => {
+describe("活動日誌永久全量保存與防清空機制測試 (Unit: Activity Log Permanent Retention & Anti-Wipe)", () => {
   const timestamp = Date.now();
   const testPrefix = `retention_test_${timestamp}`;
 
@@ -21,44 +21,27 @@ describe("活動日誌 50 筆自動保留與防清空機制測試 (Unit: Activit
     }).catch(() => {});
   });
 
-  test("pruneActivityLogs 修剪函式能精確保留最新筆數並刪除舊資料", async () => {
-    // 建立 3 筆具有明確時間順序的測試日誌
-    await prisma.activityLog.create({
-      data: {
-        email: `${testPrefix}_old@example.com`,
-        name: "舊測試人員",
+  test("多次寫入日誌應永久全量保存，不會自動被刪除或修剪", async () => {
+    // 連續寫入 5 筆日誌
+    for (let i = 1; i <= 5; i++) {
+      await recordActivityLog({
+        email: `${testPrefix}_${i}@example.com`,
+        name: `歷史用戶 ${i}`,
         action: "login",
         status: "success",
-        os: "Linux",
-        browser: "Chrome",
-        ip: "127.0.0.1",
-        createdAt: new Date(Date.now() - 10000),
-      },
-    });
+        ip: `192.168.1.${i}`,
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      });
+    }
 
-    await prisma.activityLog.create({
-      data: {
-        email: `${testPrefix}_new@example.com`,
-        name: "新測試人員",
-        action: "login",
-        status: "success",
-        os: "Linux",
-        browser: "Chrome",
-        ip: "127.0.0.1",
-        createdAt: new Date(),
-      },
-    });
-
-    // 驗證測試前綴記錄已寫入
-    const testLogs = await prisma.activityLog.findMany({
+    // 檢查 5 筆日誌全部完整存在
+    const count = await prisma.activityLog.count({
       where: { email: { startsWith: testPrefix } },
-      orderBy: { createdAt: "desc" },
     });
-    assert.equal(testLogs.length, 2, "應有 2 筆測試日誌");
-    assert.equal(testLogs[0].email, `${testPrefix}_new@example.com`);
+    assert.equal(count, 5, "所有寫入的歷史日誌應 100% 完整保留");
   });
 
-  test("recordActivityLog 寫入新日誌後能正常記錄且維持最新日誌", async () => {
+  test("recordActivityLog 寫入新日誌後能正確解析環境與操作詳情", async () => {
     await recordActivityLog({
       email: `${testPrefix}_active@example.com`,
       name: "活躍測試者",

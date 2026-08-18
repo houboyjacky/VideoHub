@@ -225,13 +225,13 @@ export default function AdminLogsPage() {
             <h2 className="text-xl font-bold text-white tracking-tight">
               系統活動日誌 (Activity Logs)
             </h2>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-medium">
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>自動循環保留最新 50 筆</span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[11px] font-medium">
+              <Sparkles className="w-3 h-3 text-emerald-400" />
+              <span>永久全量保存</span>
             </span>
           </div>
           <p className="text-xs text-zinc-400">
-            永久追蹤記錄使用者登入、登出、註冊申請、兌換與管理員審核紀錄。系統採用自動循環保留機制（恆定嚴格保留最新 50 筆），防篡改且不可手動清空。
+            永久完整追蹤記錄使用者登入、登出、註冊申請、兌換、安全鎖定與審核紀錄。日誌防篡改且不可手動清空；預設載入最新 50 筆，支援透過搜尋框即時直查資料庫全量歷史紀錄。
           </p>
         </div>
 
