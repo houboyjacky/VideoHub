@@ -102,11 +102,24 @@ export function ShareGroupClient({
         throw new Error(data.error || "兌換失敗，請確認邀請碼是否正確");
       }
 
-      setLocallyUnlocked(true);
-      setRedeemSuccess(`🎉 成功解鎖「${group.name}」專屬分組！`);
-      setTimeout(() => {
-        setRedeemModalOpen(false);
-      }, 2000);
+      if (data.unlocked) {
+        setLocallyUnlocked(true);
+        setRedeemSuccess(data.message || `🎉 成功解鎖「${group.name}」專屬分組！`);
+        setTimeout(() => {
+          setRedeemModalOpen(false);
+          window.location.reload();
+        }, 1800);
+      } else if (data.pending) {
+        setRedeemSuccess(data.message || "🎉 申請已送出！請等待管理員審核通過。");
+        setTimeout(() => {
+          setRedeemModalOpen(false);
+        }, 3000);
+      } else {
+        setRedeemSuccess(data.message || "🎉 操作成功！");
+        setTimeout(() => {
+          setRedeemModalOpen(false);
+        }, 2000);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setRedeemError(err.message);
@@ -360,6 +373,13 @@ export function ShareGroupClient({
                   <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-sm flex items-center gap-2.5">
                     <AlertCircle className="w-5 h-5 shrink-0 text-red-400" />
                     <span>{redeemError}</span>
+                  </div>
+                )}
+
+                {redeemSuccess && (
+                  <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-2.5">
+                    <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400" />
+                    <span>{redeemSuccess}</span>
                   </div>
                 )}
 

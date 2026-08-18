@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ shareId: string }>;
-  searchParams: Promise<{ code?: string }>;
+  searchParams: Promise<{ code?: string; invite?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -69,7 +69,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ShareGroupPage({ params, searchParams }: Props) {
   const { shareId } = await params;
-  const { code } = await searchParams;
+  const { code, invite } = await searchParams;
+  const initialCode = (code || invite || "").trim().toUpperCase();
 
   const group = await prisma.group.findFirst({
     where: {
@@ -124,7 +125,7 @@ export default async function ShareGroupPage({ params, searchParams }: Props) {
       videos={videos}
       isLoggedIn={isLoggedIn}
       isUnlocked={isUnlocked}
-      initialCode={code || ""}
+      initialCode={initialCode}
     />
   );
 }
