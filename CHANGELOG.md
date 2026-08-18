@@ -4,6 +4,23 @@
 
 ---
 
+## [1.1.14] - 2026-08-19
+
+### 🏛️ DDD 領域驅動架構與全域動態設定 (DDD & System Settings)
+- **DDD 領域驅動模組化重構 (Domain-Driven Design)**：
+  - 劃分 5 大核心業務領域（`Identity`, `Invitation`, `Media`, `Audit`, `Notification`）與 Application Use Cases，將商業邏輯與 API 控制器完整解耦。
+- **管理後台全域動態設定頁面 (`/admin/settings`)**：
+  - 支援於網頁介面動態修改網站品牌名稱、管理員稱呼、YouTube API Key、SMTP/Resend 郵件帳密與安全防禦策略，免重啟 Docker 容器即時生效。
+  - 實作三層優先級解析（1. 後台資料庫設定 ➜ 2. `.env` 環境變數 ➜ 3. 系統內建預設值），支援「留空即回退」與機密金鑰眼睛遮罩，並提供一鍵寄送測試信工具。
+- **Docker Compose 預設全套整合與三級階梯式設定檔**：
+  - `docker-compose.yml` 預設整合本地 MongoDB 7 容器（自帶健康檢查與 Volume 持久化），新手執行 `docker compose up -d` 即可開箱即用，同時無縫相容自備外部資料庫。
+  - `.env.local.example` 重構為三級視覺階梯結構，大幅精簡冷啟動必備變數。
+- **自動化測試擴充與 Standalone Docker E2E 模擬 (135/135 PASS)**：
+  - 新增 `tests/unit/ddd-domains.test.ts` 與 `tests/unit/system-settings-usecase.test.ts`。
+  - 實作 `scripts/test-docker-standalone.sh`，完成獨立 Docker 內建 Mongo 容器端到端整合測試驗證。
+
+---
+
 ## [1.1.13] - 2026-08-19
 
 ### 📜 系統活動日誌永久全量保存 (Audit Logs)

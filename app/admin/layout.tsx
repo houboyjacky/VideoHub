@@ -31,6 +31,7 @@ export default async function AdminLayout({
     { label: "分組管理", href: "/admin/groups", icon: Layers },
     { label: "邀請碼管理", href: "/admin/invite-codes", icon: KeyRound },
     { label: "郵件設定", href: "/admin/email", icon: Mail },
+    { label: "系統設定", href: "/admin/settings", icon: ShieldCheck },
     { label: "活動日誌", href: "/admin/logs", icon: ScrollText },
   ];
 

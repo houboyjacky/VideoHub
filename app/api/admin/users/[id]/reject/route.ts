@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import { prisma } from "@/lib/prisma";
-import { sendRejectionEmail } from "@/lib/email";
+import { rejectUserUseCase } from "@/lib/application/use-cases/admin-user-management.usecase";
 
 export async function POST(
   req: Request,
@@ -12,30 +11,20 @@ export async function POST(
 
   try {
     const { id } = await params;
-
-    const user = await prisma.user.findUnique({
-      where: { id },
+    const result = await rejectUserUseCase({
+      userId: id,
+      adminEmail: check.session.user?.email || "admin",
+      adminName: check.session.user?.name || "管理員",
+      reqHeaders: req.headers,
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "找不到該用戶" }, { status: 404 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: result.statusCode });
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: {
-        status: "rejected",
-      },
-    });
-
-    // 非同步發送通知信
-    sendRejectionEmail(updatedUser.email, updatedUser.name).catch((err) => {
-      console.error(`[Reject Email Send Error] for ${updatedUser.email}:`, err);
-    });
-
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({ success: true, user: result.user });
   } catch (error) {
     console.error("[Admin User Reject Error]:", error);
-    return NextResponse.json({ error: "拒絕申請失敗" }, { status: 500 });
+    return NextResponse.json({ error: "拒絕審核失敗" }, { status: 500 });
   }
 }

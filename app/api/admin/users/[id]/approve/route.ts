@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import { prisma } from "@/lib/prisma";
-import { sendApprovalEmail } from "@/lib/email";
+import { approveUserUseCase, updateUserGroupsUseCase } from "@/lib/application/use-cases/admin-user-management.usecase";
 
 export async function POST(
   req: Request,
@@ -15,29 +14,28 @@ export async function POST(
     const body = await req.json().catch(() => ({}));
     const { groupIds } = body;
 
-    const user = await prisma.user.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "找不到該用戶" }, { status: 404 });
+    if (Array.isArray(groupIds)) {
+      await updateUserGroupsUseCase({
+        userId: id,
+        groupIds,
+        adminEmail: check.session.user?.email || "admin",
+        adminName: check.session.user?.name || "管理員",
+        reqHeaders: req.headers,
+      });
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: {
-        status: "approved",
-        approvedAt: new Date(),
-        groupIds: Array.isArray(groupIds) ? groupIds : user.groupIds,
-      },
+    const result = await approveUserUseCase({
+      userId: id,
+      adminEmail: check.session.user?.email || "admin",
+      adminName: check.session.user?.name || "管理員",
+      reqHeaders: req.headers,
     });
 
-    // 非同步發送通知信
-    sendApprovalEmail(updatedUser.email, updatedUser.name).catch((err) => {
-      console.error(`[Approve Email Send Error] for ${updatedUser.email}:`, err);
-    });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: result.statusCode });
+    }
 
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({ success: true, user: result.user });
   } catch (error) {
     console.error("[Admin User Approve Error]:", error);
     return NextResponse.json({ error: "審核通過失敗" }, { status: 500 });

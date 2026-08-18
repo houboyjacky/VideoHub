@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { recordActivityLog } from "@/lib/audit-log";
+import { extractClientIp } from "@/lib/user-agent";
+import { updateUserProfileUseCase } from "@/lib/application/use-cases/update-user-profile.usecase";
 
 // PATCH: 使用者修改自己的個人稱呼/姓名
 export async function PATCH(req: NextRequest) {
@@ -11,55 +11,32 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "請先登入帳號" }, { status: 401 });
     }
 
-    const email = session.user.email.toLowerCase();
+    const email = session.user.email;
+    const clientIp = extractClientIp(req.headers);
     const body = await req.json().catch(() => ({}));
     const { name } = body;
 
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json({ error: "請輸入有效的稱呼或姓名" }, { status: 400 });
-    }
-
-    const cleanName = name.trim();
-    if (cleanName.length > 50) {
-      return NextResponse.json({ error: "稱呼長度不可超過 50 個字元" }, { status: 400 });
-    }
-
-    const current = await prisma.user.findUnique({ where: { email } });
-    if (!current) {
-      return NextResponse.json({ error: "找不到該使用者帳號" }, { status: 404 });
-    }
-
-    if (current.disabled) {
-      return NextResponse.json({ error: "您的帳號已被停用，無法修改資料" }, { status: 403 });
-    }
-
-    const updated = await prisma.user.update({
-      where: { email },
-      data: { name: cleanName },
-    });
-
-    recordActivityLog({
+    const result = await updateUserProfileUseCase({
       email,
-      name: cleanName,
-      image: updated.image,
-      userId: updated.id,
-      action: "user_update_profile",
-      status: "success",
-      details: `使用者將稱呼從「${current.name}」修改為「${cleanName}」`,
-      req,
+      name,
+      reqHeaders: req.headers,
+      clientIp,
     });
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.statusCode }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      message: "個人稱呼已成功更新",
-      user: {
-        id: updated.id,
-        name: updated.name,
-        email: updated.email,
-      },
+      message: result.message,
+      user: result.user,
     });
   } catch (error) {
-    console.error("[User Profile PATCH Error]:", error);
-    return NextResponse.json({ error: "更新個人稱呼失敗" }, { status: 500 });
+    console.error("Update profile error:", error);
+    return NextResponse.json({ error: "修改個人稱呼時發生伺服器錯誤" }, { status: 500 });
   }
 }

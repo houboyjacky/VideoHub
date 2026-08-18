@@ -3,11 +3,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { recordActivityLog } from "@/lib/audit-log";
 import { extractClientIp } from "@/lib/user-agent";
-import {
-  checkInviteRateLimit,
-  recordInviteFailure,
-  resetInviteRateLimit,
-} from "@/lib/rate-limiter";
+import { validateProfileName } from "@/lib/domains/identity/profile-validator";
+import { redeemInviteCodeUseCase } from "@/lib/application/use-cases/redeem-invite-code.usecase";
 
 export async function POST(req: Request) {
   try {
@@ -19,224 +16,115 @@ export async function POST(req: Request) {
       );
     }
 
-    const email = session.user.email.toLowerCase();
+    const email = session.user.email.toLowerCase().trim();
     const clientIp = extractClientIp(req.headers);
     const body = await req.json().catch(() => ({}));
-
-    // 0. 安全防護：檢查 Session Email 與 Client IP 是否處於鎖定狀態
-    const emailLimit = checkInviteRateLimit(email);
-    const ipLimit = checkInviteRateLimit(clientIp);
-    const isLocked = emailLimit.locked || ipLimit.locked;
-    const remainingSec = Math.max(emailLimit.remainingSeconds, ipLimit.remainingSeconds);
-
-    if (isLocked) {
-      // 在活動日誌詳細記錄冷卻期間的存取攔截
-      recordActivityLog({
-        email,
-        name: (body?.name || "").trim() || "訪客",
-        action: "register_rate_limit_blocked",
-        status: "failed",
-        details: `帳號處於安全冷卻期內，系統拒絕註冊填碼請求 (剩餘鎖定時間: ${remainingSec} 秒)`,
-        req,
-      });
-
-      // 對使用者不透露剩餘秒數，維持安全簡潔提示
-      return NextResponse.json(
-        {
-          error: "輸入錯誤次數過多，操作已被暫時限制，請稍後再試。",
-        },
-        { status: 429 }
-      );
-    }
-
     const { name, inviteCode } = body;
 
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
+    // 1. 稱呼校驗
+    const profileValidation = validateProfileName(name);
+    if (!profileValidation.isValid || !profileValidation.name) {
       return NextResponse.json(
-        { error: "請填寫您的稱呼或姓名" },
+        { error: profileValidation.error || "請填寫有效的稱呼或姓名" },
         { status: 400 }
       );
     }
 
-    if (!inviteCode || typeof inviteCode !== "string") {
-      return NextResponse.json(
-        { error: "請輸入邀請碼" },
-        { status: 400 }
-      );
-    }
+    const cleanName = profileValidation.name;
 
-    const codeClean = inviteCode.trim();
+    // 2. 若有填寫邀請碼，轉由 RedeemInviteCodeUseCase 處理
+    if (inviteCode && typeof inviteCode === "string" && inviteCode.trim().length > 0) {
+      const redeemResult = await redeemInviteCodeUseCase({
+        email,
+        sessionName: cleanName,
+        sessionImage: session.user.image || undefined,
+        clientIp,
+        code: inviteCode.trim(),
+        reqHeaders: req.headers,
+      });
 
-    // 1. 檢查使用者是否已經註冊過
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser && existingUser.status !== "unregistered") {
-      return NextResponse.json(
-        { error: `您已提交過申請，目前狀態為：${existingUser.status}` },
-        { status: 400 }
-      );
-    }
-
-    // 2. 驗證邀請碼
-    const invite = await prisma.inviteCode.findUnique({
-      where: { code: codeClean },
-    });
-
-    // 輔助函式：記錄失敗並更新鎖定狀態與詳細審計日誌
-    const handleInvalidCode = (errorMessage: string) => {
-      const failEmail = recordInviteFailure(email);
-      const failIp = recordInviteFailure(clientIp);
-      const nowLocked = failEmail.locked || failIp.locked;
-      const attemptsLeft = Math.min(failEmail.attemptsLeft, failIp.attemptsLeft);
-
-      if (nowLocked) {
-        // 觸發鎖定：記錄詳細日誌
-        recordActivityLog({
-          email,
-          name: name.trim(),
-          action: "register_rate_limit_lockout",
-          status: "failed",
-          details: `註冊時連續輸入錯誤邀請碼達 5 次 (嘗試碼:「${codeClean}」)，觸發 15 分鐘安全冷卻鎖定`,
-          req,
-        });
-
-        // 對使用者不透露具體時間
+      if (!redeemResult.success) {
         return NextResponse.json(
-          {
-            error: "輸入錯誤次數過多，操作已被暫時限制，請稍後再試。",
-          },
-          { status: 429 }
+          { error: redeemResult.error },
+          { status: redeemResult.statusCode }
         );
       }
 
-      // 未達上限：日誌記錄單次失敗紀錄
-      recordActivityLog({
-        email,
-        name: name.trim(),
-        action: "register_invite_failed",
-        status: "failed",
-        details: `註冊輸入錯誤邀請碼「${codeClean}」: ${errorMessage} (剩餘 ${attemptsLeft} 次機會)`,
-        req,
+      // 同步更新使用者的 name
+      await prisma.user.update({
+        where: { email },
+        data: { name: cleanName },
       });
 
-      // 對使用者只回應錯誤原因，不暴露剩餘次數
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: 400 }
-      );
-    };
-
-    if (!invite) {
-      return handleInvalidCode("無效的邀請碼，請確認是否輸入正確");
+      return NextResponse.json({
+        success: true,
+        message: redeemResult.message,
+        autoApproved: redeemResult.autoApproved,
+        status: redeemResult.userStatus,
+      });
     }
 
-    if (invite.disabled) {
-      return handleInvalidCode("此邀請碼已被管理員停用");
-    }
+    // 3. 無邀請碼註冊（直接送出待審核申請）
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
 
-    const now = new Date();
-    if (new Date(invite.expiresAt) < now) {
-      return handleInvalidCode("此邀請碼已超過有效期限");
-    }
+    if (user) {
+      if (user.disabled) {
+        return NextResponse.json(
+          { error: "您的帳號已被停用，請聯絡管理員" },
+          { status: 403 }
+        );
+      }
 
-    if (invite.usedCount >= invite.maxUses) {
-      return handleInvalidCode("此邀請碼已達使用次數上限");
-    }
+      if (user.status === "approved") {
+        return NextResponse.json({
+          success: true,
+          message: "您的帳號已核准，無需重複申請",
+          status: "approved",
+        });
+      }
 
-    // 3. 建立或更新 User 狀態 (依 autoApprove 智慧分流)
-    const isAuto = !!invite.autoApprove;
-    const targetGroupIds = invite.targetGroupIds || [];
-    const nowTimestamp = new Date();
-
-    let newUser;
-    if (existingUser) {
-      const mergedGroupIds = isAuto
-        ? Array.from(new Set([...(existingUser.groupIds || []), ...targetGroupIds]))
-        : existingUser.groupIds || [];
-
-      newUser = await prisma.user.update({
+      await prisma.user.update({
         where: { email },
         data: {
-          name: name.trim(),
-          status: isAuto ? "approved" : "pending",
-          groupIds: mergedGroupIds,
-          usedInviteCode: codeClean,
-          approvedAt: isAuto ? nowTimestamp : existingUser.approvedAt,
-          image: session.user.image || undefined,
+          name: cleanName,
+          status: "pending",
         },
       });
     } else {
-      newUser = await prisma.user.create({
+      user = await prisma.user.create({
         data: {
           email,
-          name: name.trim(),
-          status: isAuto ? "approved" : "pending",
-          groupIds: isAuto ? targetGroupIds : [],
-          usedInviteCode: codeClean,
-          approvedAt: isAuto ? nowTimestamp : null,
+          name: cleanName,
           image: session.user.image || undefined,
+          status: "pending",
+          groupIds: [],
         },
       });
     }
 
-    // 4. 更新邀請碼使用記錄與次數
-    await prisma.inviteCode.update({
-      where: { id: invite.id },
-      data: {
-        usedCount: { increment: 1 },
-        usedBy: { push: email },
-      },
-    });
-
-    // 5. 若為 autoApprove 則發送歡迎信 (背景非同步處理不阻礙註冊)
-    if (isAuto) {
-      (async () => {
-        try {
-          const { sendWelcomeAutoApproveEmail } = await import("@/lib/email");
-          const groups = await prisma.group.findMany({
-            where: { id: { in: targetGroupIds } },
-          });
-          const groupNames = groups.map((g) => g.name);
-          await sendWelcomeAutoApproveEmail(email, newUser.name, groupNames);
-        } catch (mailErr) {
-          console.error("[Register autoApprove Email Error]:", mailErr);
-        }
-      })();
-    }
-
-    // 重置邀請碼錯誤計數與鎖定狀態
-    resetInviteRateLimit(email);
-    resetInviteRateLimit(clientIp);
-
-    // 6. 記錄註冊活動日誌
     recordActivityLog({
       email,
-      name: newUser.name,
-      image: newUser.image,
-      userId: newUser.id,
-      action: isAuto ? "auto_approved" : "register",
+      name: cleanName,
+      image: session.user.image,
+      userId: user.id,
+      action: "register_submit_pending",
       status: "success",
-      details: isAuto
-        ? `使用邀請碼「${codeClean}」自動核准開通並綁定 ${targetGroupIds.length} 個分組`
-        : `使用邀請碼「${codeClean}」提交會員審核申請`,
+      details: "使用者提交註冊申請，等待管理員手動審核",
       req,
+      ip: clientIp,
     });
 
     return NextResponse.json({
       success: true,
-      autoApproved: isAuto,
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        status: newUser.status,
-      },
+      message: "註冊申請已送出，請等待管理員審核",
+      status: "pending",
     });
   } catch (error) {
-    console.error("[Register API Error]:", error);
+    console.error("Register Error:", error);
     return NextResponse.json(
-      { error: "伺服器內部錯誤，請稍候重試" },
+      { error: "註冊處理時發生伺服器錯誤" },
       { status: 500 }
     );
   }
