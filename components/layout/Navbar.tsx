@@ -1,8 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
-import { Shield, LogOut, Video, Sparkles } from "lucide-react";
+import { Shield, LogOut, Video, Sparkles, Edit3 } from "lucide-react";
 import { RedeemInviteModal } from "./RedeemInviteModal";
+import { EditProfileModal } from "./EditProfileModal";
 
 export async function Navbar() {
   const session = await auth();
@@ -53,23 +54,36 @@ export async function Navbar() {
             </Link>
           )}
 
-          {/* User info */}
+          {/* User info & Edit Profile */}
           <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-            {user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.image}
-                alt={user.name || "User"}
-                className="w-7 h-7 rounded-full border border-amber-500/40 object-cover"
-              />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-zinc-800 border border-white/20 flex items-center justify-center text-xs font-semibold text-zinc-300">
-                {(user.name || "U")[0].toUpperCase()}
-              </div>
-            )}
-            <span className="hidden md:inline text-xs sm:text-sm font-medium text-zinc-300 truncate max-w-[120px]">
-              {user.name}
-            </span>
+            <EditProfileModal
+              currentName={user.name}
+              email={user.email}
+              trigger={
+                <button
+                  type="button"
+                  className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group text-left"
+                  title="點擊修改個人稱呼"
+                >
+                  {user.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.image}
+                      alt={user.name || "User"}
+                      className="w-7 h-7 rounded-full border border-amber-500/40 object-cover"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-zinc-800 border border-white/20 flex items-center justify-center text-xs font-semibold text-zinc-300">
+                      {(user.name || "U")[0].toUpperCase()}
+                    </div>
+                  )}
+                  <span className="hidden md:inline text-xs sm:text-sm font-medium text-zinc-300 group-hover:text-amber-300 truncate max-w-[120px]">
+                    {user.name}
+                  </span>
+                  <Edit3 className="w-3 h-3 text-zinc-500 group-hover:text-amber-300 hidden sm:inline" />
+                </button>
+              }
+            />
 
             {/* Logout form */}
             <form
@@ -81,7 +95,7 @@ export async function Navbar() {
               <button
                 type="submit"
                 title="登出"
-                className="p-1.5 text-zinc-400 hover:text-red-400 rounded-lg hover:bg-white/5 transition-colors"
+                className="p-1.5 text-zinc-400 hover:text-red-400 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>

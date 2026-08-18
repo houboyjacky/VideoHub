@@ -4,19 +4,39 @@ import { prisma } from "@/lib/prisma";
 import { FeedClient } from "./FeedClient";
 import { ShieldAlert, KeyRound } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getAdminDisplayName } from "@/lib/admin-helper";
 import { RedeemInviteModal } from "@/components/layout/RedeemInviteModal";
 
 export default async function FeedPage() {
   const session = await auth();
-  const user = session?.user;
-
-  if (!user || user.status !== "approved") {
-    return null;
+  if (!session?.user?.email) {
+    redirect("/");
   }
 
-  const isAdmin = !!user.isAdmin;
-  const userGroupIds = user.groupIds || [];
+  const email = session.user.email.toLowerCase();
+  const dbUser = await prisma.user.findUnique({ where: { email } });
+
+  // 1. 若資料庫無記錄，導向註冊頁
+  if (!dbUser) {
+    redirect("/register");
+  }
+
+  // 2. 若帳號已停用
+  if (dbUser.disabled) {
+    redirect("/auth/disabled");
+  }
+
+  // 3. 若帳號待審核或拒絕
+  if (dbUser.status === "pending" || dbUser.status === "rejected") {
+    redirect("/pending");
+  }
+
+  const adminEmails = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase());
+  const isAdmin = !!session.user.isAdmin || adminEmails.includes(email);
+  const userGroupIds = dbUser.groupIds || [];
 
   // 若非管理員且完全未被分配任何分組
   if (!isAdmin && userGroupIds.length === 0) {

@@ -49,9 +49,6 @@ export default auth((req) => {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL("/", req.url));
     }
-    if (status === "unregistered") {
-      return NextResponse.redirect(new URL("/register", req.url));
-    }
     if (status === "pending" || status === "rejected") {
       return NextResponse.redirect(new URL("/pending", req.url));
     }
