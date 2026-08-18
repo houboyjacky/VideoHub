@@ -39,10 +39,10 @@ describe("後台活動日誌資料庫級別搜尋測試 (Unit: Admin Logs Databa
   });
 
   after(async () => {
-    // 測試完成後自動清理
+    // 測試完成後精確清理本測試產生的 2 筆日誌 (絕不誤刪真實用戶資料)
     await prisma.activityLog.deleteMany({
       where: {
-        email: { startsWith: "search_" },
+        email: { in: [targetEmail, otherEmail] },
       },
     }).catch(() => {});
   });
