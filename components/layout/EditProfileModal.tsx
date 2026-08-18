@@ -19,7 +19,8 @@ export function EditProfileModal({
   trigger,
 }: EditProfileModalProps) {
   const router = useRouter();
-  const { update } = useSession();
+  const sessionResult = useSession?.();
+  const update = sessionResult?.update;
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(currentName || "");
   const [loading, setLoading] = useState(false);

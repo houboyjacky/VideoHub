@@ -9,7 +9,9 @@ import { KeyRound, User, Sparkles, Loader2, AlertCircle, CheckCircle2 } from "lu
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status: sessionStatus, update } = useSession();
+  const sessionResult = useSession?.();
+  const session = sessionResult?.data;
+  const update = sessionResult?.update;
 
   const [name, setName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -67,10 +69,12 @@ function RegisterForm() {
       }
 
       // 刷新 Client 端 NextAuth JWT Session
-      await update({
-        status: data.autoApproved ? "approved" : "pending",
-        name: name.trim(),
-      }).catch(() => {});
+      if (update) {
+        await update({
+          status: data.autoApproved ? "approved" : "pending",
+          name: name.trim(),
+        }).catch(() => {});
+      }
 
       if (data.autoApproved) {
         // 自動核准直接進入動態牆

@@ -3,6 +3,7 @@ import { Inter, Noto_Sans_TC } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,14 +39,15 @@ export default function RootLayout({
       className={`${inter.variable} ${notoSansTC.variable} dark`}
     >
       <body className="font-sans antialiased bg-[#0a0a0f] text-zinc-100 min-h-screen relative selection:bg-amber-500/30 selection:text-amber-200">
-        {/* 微光背景氛圍特效 */}
-        <div className="ambient-glow" aria-hidden="true" />
-        <div className="relative z-10 flex flex-col min-h-screen">
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          
-          {/* 🌟 醒目全站頁尾 (Enhanced Premium Footer) */}
-          <footer className="mt-16 border-t border-white/10 bg-[#0c0c14]/90 backdrop-blur-2xl text-xs text-zinc-400">
+        <AuthProvider>
+          {/* 微光背景氛圍特效 */}
+          <div className="ambient-glow" aria-hidden="true" />
+          <div className="relative z-10 flex flex-col min-h-screen">
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            
+            {/* 🌟 醒目全站頁尾 (Enhanced Premium Footer) */}
+            <footer className="mt-16 border-t border-white/10 bg-[#0c0c14]/90 backdrop-blur-2xl text-xs text-zinc-400">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
               {/* 上半部：品牌標識、合規宣告與三大核心政策按鈕 */}
               <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
@@ -109,7 +111,8 @@ export default function RootLayout({
             </div>
           </footer>
         </div>
-      </body>
-    </html>
-  );
+      </AuthProvider>
+    </body>
+  </html>
+);
 }
