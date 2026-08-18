@@ -167,6 +167,13 @@ describe("後台 API 全路徑未授權防護真機測試 (Security: Admin API E
     assert.equal(res.status, 403);
   });
 
+  test("DELETE /api/admin/invite-codes/[id] 未授權應回傳 403", async () => {
+    const res = await fetch(`${BASE_URL}/api/admin/invite-codes/${dummyId}`, {
+      method: "DELETE",
+    });
+    assert.equal(res.status, 403);
+  });
+
   test("POST /api/share/redeem 未登入應回傳 401 或 403", async () => {
     const res = await fetch(`${BASE_URL}/api/share/redeem`, {
       method: "POST",

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
 import {
   KeyRound,
@@ -16,6 +17,8 @@ import {
   Share2,
   X,
   Layers,
+  Trash2,
+  ShieldAlert,
 } from "lucide-react";
 
 interface GroupOption {
@@ -59,9 +62,18 @@ export default function AdminInviteCodesPage() {
   const [shareModalItem, setShareModalItem] = useState<InviteCodeData | null>(null);
   const [copiedType, setCopiedType] = useState<string | null>(null);
 
+  // Delete Modal states
+  const [deletingCode, setDeletingCode] = useState<InviteCodeData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -146,190 +158,221 @@ export default function AdminInviteCodesPage() {
     }
   };
 
-  const handleCopy = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
-    if (type === "code") {
-      setCopiedCode(text);
-      setTimeout(() => setCopiedCode(null), 2000);
-    } else {
-      setCopiedType(type);
-      setTimeout(() => setCopiedType(null), 2000);
+  const handleDelete = async () => {
+    if (!deletingCode) return;
+    try {
+      setIsDeleting(true);
+      setError(null);
+
+      const res = await fetch(`/api/admin/invite-codes/${deletingCode.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "刪除邀請碼失敗");
+
+      setSuccess(data.message || `已成功刪除邀請碼【${deletingCode.code}】`);
+      setDeletingCode(null);
+      fetchData();
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const toggleGroupSelection = (gid: string) => {
+  const handleCopy = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedType(type);
+    setTimeout(() => setCopiedType(null), 2000);
+  };
+
+  const handleCopyTableCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const toggleGroupSelection = (groupId: string) => {
     setTargetGroupIds((prev) =>
-      prev.includes(gid) ? prev.filter((id) => id !== gid) : [...prev, gid]
+      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]
     );
   };
 
-  // 生成推廣網址
   const getShareUrl = (item: InviteCodeData) => {
     if (typeof window === "undefined") return "";
     const origin = window.location.origin;
-    const shareId = item.targetGroupShareIds?.[0] || item.targetGroupIds?.[0] || "general";
-    return `${origin}/share/group/${shareId}?code=${item.code}`;
+    if (item.targetGroupShareIds && item.targetGroupShareIds.length > 0) {
+      return `${origin}/share/group/${item.targetGroupShareIds[0]}?invite=${item.code}`;
+    }
+    return `${origin}/register?invite=${item.code}`;
   };
 
   const getShareText = (item: InviteCodeData) => {
-    const groupName = item.targetGroupNames?.[0] || "專屬影音分組";
     const url = getShareUrl(item);
-    return `🎬 【${groupName}】專屬影音內容已開放！\n使用邀請碼【${item.code}】即可立即解鎖完整影片：\n👉 ${url}`;
+    const groupText =
+      item.targetGroupNames && item.targetGroupNames.length > 0
+        ? `【${item.targetGroupNames.join("、")}】`
+        : "精選私人影音分組";
+    return `🍿 邀請你加入我的私人影音站！\n點擊專屬連結立即開通觀看權限${groupText}：\n${url}\n\n通行邀請碼：${item.code}`;
   };
 
   return (
-    <div className="space-y-8">
-      {/* 訊息提示 */}
+    <div className="space-y-8 animate-fade-in pb-12">
+      {/* 標題與說明 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <KeyRound className="w-8 h-8 text-amber-400" />
+            <span>智慧邀請碼管理</span>
+          </h1>
+          <p className="text-sm text-zinc-400 mt-1">
+            發行具備次數、效期、自動審核與分組綁定之邀請通行碼
+          </p>
+        </div>
+      </div>
+
       {error && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 text-red-300 text-xs sm:text-sm">
-          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+        <div className="p-4 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-sm flex items-center gap-3 animate-fade-in">
+          <AlertCircle className="w-5 h-5 shrink-0 text-red-400" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3 text-emerald-300 text-xs sm:text-sm">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-3 animate-fade-in">
+          <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400" />
           <span>{success}</span>
         </div>
       )}
 
-      {/* 建立智慧邀請碼表單 */}
-      <GlassCard className="p-6 border border-white/10 shadow-xl">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400">
-            <Plus className="w-4 h-4" />
-          </div>
-          <h2 className="text-base font-semibold text-white">建立新智慧邀請碼</h2>
+      {/* 建立新邀請碼表單 */}
+      <GlassCard className="p-6 sm:p-7 border border-white/10 shadow-xl space-y-6">
+        <div className="flex items-center gap-2.5 text-amber-400 border-b border-white/10 pb-4">
+          <Plus className="w-5 h-5" />
+          <h2 className="text-lg font-bold text-white">發行新邀請通行碼</h2>
         </div>
 
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-zinc-300">
-                自訂代碼 (選填，留空自動生成)
+        <form onSubmit={handleCreate} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* 自訂代碼 */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-zinc-300">
+                自訂代碼（留空則由系統隨機產生）
               </label>
               <input
                 type="text"
-                placeholder="例如：VIP-FRIENDS"
+                placeholder="例如：VIP-SUMMER"
                 value={customCode}
                 onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm uppercase font-mono"
-                disabled={creating}
+                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm font-mono uppercase text-zinc-100 placeholder:text-zinc-600"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-zinc-300">
-                可用次數上限
+            {/* 可使用次數 */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-zinc-300">
+                可使用次數上限
               </label>
               <input
                 type="number"
                 min="1"
-                max="1000"
                 required
                 value={maxUses}
                 onChange={(e) => setMaxUses(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
-                disabled={creating}
+                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-zinc-100"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-zinc-300">
-                有效天數 (預設 30 天)
+            {/* 有效天數 */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-zinc-300">
+                有效天數
               </label>
               <input
                 type="number"
                 min="1"
-                max="365"
                 required
                 value={daysValid}
                 onChange={(e) => setDaysValid(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
-                disabled={creating}
+                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-zinc-100"
               />
             </div>
           </div>
 
-          {/* 描述用途 */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-zinc-300">
-              用途備註 (選填，例如：LINE 群推廣、家人專屬)
+          {/* 備註說明 */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-zinc-300">
+              備註說明（選填，用於紀錄發送對象或活動名稱）
             </label>
             <input
               type="text"
-              placeholder="請輸入此邀請碼的用途或對象備註"
+              placeholder="例如：給攝影同好會、2026 夏季活動等"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
-              disabled={creating}
+              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-zinc-100 placeholder:text-zinc-600"
             />
           </div>
 
-          {/* 自動核准 Switch 與綁定分組 */}
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
+          {/* 智慧功能設定 */}
+          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Zap className={`w-4 h-4 ${autoApprove ? "text-amber-400" : "text-zinc-500"}`} />
-                <div>
-                  <span className="text-sm font-semibold text-white">⚡ 自動核准免審核 (Auto-Approve)</span>
-                  <p className="text-xs text-zinc-400">啟用後，訪客持此碼登入填名即可秒速通過，並自動綁定下方勾選的分組</p>
-                </div>
+              <div className="flex items-center gap-2.5">
+                <Zap className="w-4 h-4 text-amber-400" />
+                <span className="text-sm font-semibold text-white">自動免審開通（Auto-Approve）</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setAutoApprove(!autoApprove)}
-                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                  autoApprove ? "bg-amber-500" : "bg-zinc-700"
-                }`}
-              >
-                <span
-                  className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
-                    autoApprove ? "left-6" : "left-1"
-                  }`}
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoApprove}
+                  onChange={(e) => setAutoApprove(e.target.checked)}
+                  className="sr-only peer"
                 />
-              </button>
-            </div>
-
-            {/* 目標分組選擇 */}
-            <div className="pt-2 border-t border-white/5 space-y-2">
-              <label className="block text-xs font-medium text-zinc-300">
-                目標自動綁定分組（可多選）
+                <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
               </label>
-              {groups.length === 0 ? (
-                <p className="text-xs text-zinc-500">目前尚無分組，請先至「分組管理」建立分組。</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {groups.map((g) => {
-                    const isSelected = targetGroupIds.includes(g.id);
-                    return (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => toggleGroupSelection(g.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
-                          isSelected
-                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                            : "bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10 hover:text-white"
-                        }`}
-                      >
-                        <Layers className="w-3 h-3" />
-                        <span>{g.name}</span>
-                        {isSelected && <Check className="w-3 h-3 text-amber-400" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              啟用後，新訪客使用此代碼註冊將直接成為【已核准（Approved）】會員，無需管理員手動至人員管理審核。
+            </p>
+          </div>
+
+          {/* 綁定分組權限 */}
+          <div className="space-y-2.5">
+            <label className="block text-xs font-semibold text-zinc-300 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-amber-400" />
+              <span>綁定專屬分組（使用此邀請碼註冊或兌換時自動加入指定群組）</span>
+            </label>
+            {groups.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic">尚無任何分組，可先至分組管理建立</p>
+            ) : (
+              <div className="flex flex-wrap gap-2.5">
+                {groups.map((group) => {
+                  const isSelected = targetGroupIds.includes(group.id);
+                  return (
+                    <button
+                      key={group.id}
+                      type="button"
+                      onClick={() => toggleGroupSelection(group.id)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isSelected
+                          ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-sm"
+                          : "bg-white/5 border-white/10 text-zinc-400 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <span>{group.name}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end pt-2">
             <button
               type="submit"
               disabled={creating}
-              className="px-6 py-2.5 rounded-xl glass-btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl glass-btn-primary flex items-center gap-2 text-sm font-bold shadow-lg shadow-amber-500/20 disabled:opacity-50 cursor-pointer"
             >
               {creating ? (
                 <>
@@ -339,7 +382,7 @@ export default function AdminInviteCodesPage() {
               ) : (
                 <>
                   <Plus className="w-4 h-4" />
-                  <span>建立邀請碼</span>
+                  <span>發行邀請碼</span>
                 </>
               )}
             </button>
@@ -348,103 +391,107 @@ export default function AdminInviteCodesPage() {
       </GlassCard>
 
       {/* 邀請碼列表 */}
-      <GlassCard className="p-6 border border-white/10 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-pink-400" />
-            <h2 className="text-base font-semibold text-white">智慧邀請碼清單</h2>
+      <GlassCard className="p-6 sm:p-7 border border-white/10 shadow-xl space-y-6">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center gap-2.5 text-zinc-200">
+            <KeyRound className="w-5 h-5 text-amber-400" />
+            <h2 className="text-lg font-bold text-white">已發行邀請碼清單</h2>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-zinc-400 font-mono">
+              {inviteCodes.length}
+            </span>
           </div>
-          <span className="text-xs text-zinc-400">共 {inviteCodes.length} 組</span>
         </div>
 
         {loading ? (
-          <div className="py-12 flex justify-center text-zinc-400">
-            <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+          <div className="py-12 flex justify-center text-zinc-400 gap-2 items-center">
+            <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+            <span>載入中...</span>
           </div>
         ) : inviteCodes.length === 0 ? (
           <div className="py-12 text-center text-zinc-500 text-sm">
-            尚未建立任何邀請碼，請使用上方表單建立。
+            目前尚未發行任何邀請碼
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="text-xs text-zinc-400 uppercase border-b border-white/10 bg-white/[0.02]">
+            <table className="w-full text-left text-sm text-zinc-300">
+              <thead className="text-xs uppercase bg-white/[0.02] text-zinc-400 border-b border-white/10">
                 <tr>
-                  <th className="py-3.5 px-4">邀請代碼 / 備註</th>
-                  <th className="py-3.5 px-4">類型 / 目標分組</th>
-                  <th className="py-3.5 px-4">使用狀況</th>
-                  <th className="py-3.5 px-4">有效期限</th>
-                  <th className="py-3.5 px-4">狀態</th>
-                  <th className="py-3.5 px-4 text-right">操作</th>
+                  <th className="py-3 px-4">邀請代碼</th>
+                  <th className="py-3 px-4">備註說明</th>
+                  <th className="py-3 px-4">自動開通 / 綁定分組</th>
+                  <th className="py-3 px-4">使用次數</th>
+                  <th className="py-3 px-4">有效期限</th>
+                  <th className="py-3 px-4">狀態</th>
+                  <th className="py-3 px-4 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {inviteCodes.map((item) => {
                   const isExpired = new Date(item.expiresAt) < new Date();
                   const isFull = item.usedCount >= item.maxUses;
-                  const isActive = !item.disabled && !isExpired && !isFull;
+                  const isCopied = copiedCode === item.code;
 
                   return (
                     <tr key={item.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 font-mono font-bold text-amber-300">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-amber-300">{item.code}</span>
+                          <span>{item.code}</span>
                           <button
                             type="button"
-                            onClick={() => handleCopy(item.code, "code")}
-                            className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white"
-                            title="複製邀請碼"
+                            onClick={() => handleCopyTableCode(item.code)}
+                            className="p-1 rounded text-zinc-500 hover:text-amber-300 hover:bg-white/5 transition-colors cursor-pointer"
+                            title="複製邀請代碼"
                           >
-                            {copiedCode === item.code ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            {isCopied ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
                           </button>
                         </div>
-                        {item.description && (
-                          <div className="text-[11px] text-zinc-400 mt-0.5">{item.description}</div>
-                        )}
                       </td>
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-1">
-                          {item.autoApprove ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold">
-                              <Zap className="w-3 h-3" />
-                              <span>自動核准</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700">
-                              <span>手動審核</span>
+                      <td className="py-3.5 px-4 text-zinc-400 text-xs max-w-[150px] truncate">
+                        {item.description || "—"}
+                      </td>
+                      <td className="py-3.5 px-4 text-xs">
+                        <div className="flex flex-col gap-1 items-start">
+                          {item.autoApprove && (
+                            <span className="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold">
+                              ⚡ 免審直通
                             </span>
                           )}
-                          {item.targetGroupNames && item.targetGroupNames.length > 0 && (
+                          {item.targetGroupNames && item.targetGroupNames.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
                               {item.targetGroupNames.map((gn, idx) => (
                                 <span
                                   key={idx}
-                                  className="px-1.5 py-0.5 rounded text-[10px] bg-white/5 text-zinc-300 border border-white/10"
+                                  className="px-1.5 py-0.2 rounded text-[10px] bg-white/5 text-zinc-300 border border-white/10"
                                 >
                                   {gn}
                                 </span>
                               ))}
                             </div>
+                          ) : (
+                            <span className="text-zinc-600 text-[11px]">無指定</span>
                           )}
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 font-mono">
-                        <span className="text-zinc-200 font-semibold">{item.usedCount}</span>
-                        <span className="text-zinc-500"> / {item.maxUses}</span>
-                      </td>
-                      <td className="py-3.5 px-4 text-zinc-400">
-                        <span className="flex items-center gap-1.5 font-mono">
-                          <Calendar className="w-3.5 h-3.5 text-zinc-500" />
-                          <span>{new Date(item.expiresAt).toLocaleDateString("zh-TW")}</span>
+                      <td className="py-3.5 px-4 font-mono text-xs">
+                        <span
+                          className={
+                            isFull ? "text-red-400 font-bold" : "text-zinc-300"
+                          }
+                        >
+                          {item.usedCount}
                         </span>
+                        <span className="text-zinc-600"> / {item.maxUses}</span>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 text-xs text-zinc-400 font-mono">
+                        {new Date(item.expiresAt).toLocaleDateString("zh-TW")}
+                      </td>
+                      <td className="py-3.5 px-4 text-xs">
                         {item.disabled ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700">
+                          <span className="px-2 py-0.5 rounded text-[11px] bg-zinc-800 text-zinc-500 border border-zinc-700">
                             已停用
                           </span>
                         ) : isExpired ? (
@@ -461,29 +508,54 @@ export default function AdminInviteCodesPage() {
                           </span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-right space-x-2">
+                      <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setShareModalItem(item)}
-                          className="px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30 transition-colors inline-flex items-center gap-1"
+                          className="px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30 transition-colors inline-flex items-center gap-1 cursor-pointer"
                           title="生成推廣短文與連結"
                         >
                           <Share2 className="w-3 h-3" />
                           <span>推廣</span>
                         </button>
+
                         <button
                           type="button"
                           onClick={() => handleToggle(item.id, item.disabled)}
                           disabled={togglingId === item.id}
-                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 ${
+                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 ${
                             item.disabled
                               ? "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30"
-                              : "bg-red-500/10 text-red-300 hover:bg-red-500/20 border border-red-500/30"
+                              : "bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30"
                           }`}
+                          title={item.disabled ? "點擊重新啟用" : "點擊停用此邀請碼"}
                         >
                           <Power className="w-3 h-3" />
                           <span>{item.disabled ? "啟用" : "停用"}</span>
                         </button>
+
+                        {/* 刪除按鈕：必須先停用後方可刪除 */}
+                        {item.disabled ? (
+                          <button
+                            type="button"
+                            onClick={() => setDeletingCode(item)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            title="刪除此已停用之邀請碼"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>刪除</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            className="px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-800/40 text-zinc-600 border border-zinc-700/30 inline-flex items-center gap-1 cursor-not-allowed opacity-50"
+                            title="必須先停用後方可刪除"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>刪除</span>
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -495,139 +567,227 @@ export default function AdminInviteCodesPage() {
       </GlassCard>
 
       {/* 推廣分享彈窗 Modal (寬敞大字級) */}
-      {shareModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <GlassCard className="p-6 sm:p-8 border border-white/15 shadow-2xl space-y-6 bg-zinc-950/95 rounded-2xl">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <div className="flex items-center gap-3 text-amber-400">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                    <Share2 className="w-5 h-5" />
+      {mounted &&
+        shareModalItem &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in"
+            onClick={() => setShareModalItem(null)}
+          >
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GlassCard className="p-6 sm:p-8 border border-white/20 shadow-2xl space-y-6 bg-zinc-950/95 rounded-2xl">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div className="flex items-center gap-3 text-amber-400">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                      <Share2 className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                        智慧邀請碼推廣分享
+                      </h3>
+                      <p className="text-xs sm:text-sm text-zinc-400">
+                        一鍵複製帶碼註冊網址與社群推廣文案
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShareModalItem(null)}
+                    className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    title="關閉"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-5">
+                  {/* 邀請碼資訊 (高亮大卡片) */}
+                  <div className="p-4 sm:p-5 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs sm:text-sm text-zinc-400 block mb-0.5">專屬通行邀請碼</span>
+                      <div className="font-mono font-black text-amber-300 text-2xl sm:text-3xl tracking-wider">
+                        {shareModalItem.code}
+                      </div>
+                    </div>
+                    <div className="sm:text-right space-y-1">
+                      <span className="text-xs sm:text-sm text-zinc-400 block">綁定權限與分組</span>
+                      <div className="flex flex-wrap sm:justify-end gap-1.5 items-center">
+                        {shareModalItem.autoApprove ? (
+                          <span className="px-2.5 py-0.5 rounded-md text-xs bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
+                            ⚡ 自動開通
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-md text-xs bg-zinc-800 text-zinc-400 border border-zinc-700">
+                            手動審核
+                          </span>
+                        )}
+                        {shareModalItem.targetGroupNames && shareModalItem.targetGroupNames.length > 0 ? (
+                          shareModalItem.targetGroupNames.map((gn, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2.5 py-0.5 rounded-md text-xs bg-white/10 text-zinc-200 border border-white/15 font-semibold"
+                            >
+                              {gn}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-zinc-400">（無指定分組）</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 專屬推廣連結 */}
+                  <div className="space-y-2">
+                    <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
+                      專屬分享網址（點擊後自動預填邀請碼）
+                    </label>
+                    <div className="flex gap-2.5">
+                      <input
+                        type="text"
+                        readOnly
+                        value={getShareUrl(shareModalItem)}
+                        className="w-full px-4 py-3 rounded-xl glass-input text-sm font-mono text-amber-200 bg-black/50 border border-white/15 selection:bg-amber-500/30"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(getShareUrl(shareModalItem), "modal-url")}
+                        className="px-5 py-3 rounded-xl glass-btn-primary flex items-center gap-2 text-sm shrink-0 font-bold shadow-lg cursor-pointer"
+                      >
+                        {copiedType === "modal-url" ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
+                            <span>已複製</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            <span>複製連結</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 社群推廣短文 */}
+                  <div className="space-y-2">
+                    <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
+                      LINE / 社群推廣短文
+                    </label>
+                    <textarea
+                      rows={4}
+                      readOnly
+                      value={getShareText(shareModalItem)}
+                      className="w-full p-4 rounded-xl glass-input text-sm text-zinc-200 bg-black/50 border border-white/15 resize-none font-sans leading-relaxed selection:bg-amber-500/30"
+                    />
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(getShareText(shareModalItem), "modal-text")}
+                        className="px-5 py-2.5 rounded-xl glass-btn flex items-center gap-2 text-sm font-semibold text-amber-300 hover:text-white border-amber-500/40 hover:bg-amber-500/10 transition-colors shadow-md cursor-pointer"
+                      >
+                        {copiedType === "modal-text" ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
+                            <span>已複製短文</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            <span>複製推廣短文</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* 刪除確認 Modal */}
+      {mounted &&
+        deletingCode &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in"
+            onClick={() => setDeletingCode(null)}
+          >
+            <div
+              className="w-full max-w-md relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GlassCard className="p-6 sm:p-7 border border-red-500/30 shadow-2xl space-y-6 bg-zinc-950/95 rounded-2xl">
+                <div className="flex items-center gap-3.5 text-red-400 border-b border-white/10 pb-4">
+                  <div className="w-12 h-12 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center shadow-lg shadow-red-500/10">
+                    <ShieldAlert className="w-6 h-6 text-red-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                      智慧邀請碼推廣分享
+                    <h3 className="text-lg font-bold text-white tracking-tight">
+                      確認刪除邀請碼？
                     </h3>
-                    <p className="text-xs sm:text-sm text-zinc-400">
-                      一鍵複製帶碼註冊網址與社群推廣文案
+                    <p className="text-xs text-zinc-400">
+                      此操作將永久移除此邀請碼紀錄
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShareModalItem(null)}
-                  className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
 
-              <div className="space-y-5">
-                {/* 邀請碼資訊 (高亮大卡片) */}
-                <div className="p-4 sm:p-5 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="text-xs sm:text-sm text-zinc-400 block mb-0.5">專屬通行邀請碼</span>
-                    <div className="font-mono font-black text-amber-300 text-2xl tracking-wider">
-                      {shareModalItem.code}
-                    </div>
-                  </div>
-                  <div className="sm:text-right space-y-1">
-                    <span className="text-xs sm:text-sm text-zinc-400 block">綁定權限與分組</span>
-                    <div className="flex flex-wrap sm:justify-end gap-1.5 items-center">
-                      {shareModalItem.autoApprove ? (
-                        <span className="px-2.5 py-0.5 rounded-md text-xs bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
-                          ⚡ 自動開通
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 rounded-md text-xs bg-zinc-800 text-zinc-400 border border-zinc-700">
-                          手動審核
-                        </span>
-                      )}
-                      {shareModalItem.targetGroupNames && shareModalItem.targetGroupNames.length > 0 ? (
-                        shareModalItem.targetGroupNames.map((gn, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2.5 py-0.5 rounded-md text-xs bg-white/10 text-zinc-200 border border-white/15 font-semibold"
-                          >
-                            {gn}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-zinc-400">（無指定分組）</span>
-                      )}
-                    </div>
+                <div className="space-y-3">
+                  <p className="text-sm text-zinc-300 leading-relaxed">
+                    您確定要物理刪除已停用的邀請碼{" "}
+                    <span className="font-mono font-bold text-amber-300 bg-black/50 px-2 py-0.5 rounded border border-white/10">
+                      {deletingCode.code}
+                    </span>{" "}
+                    嗎？
+                  </p>
+                  <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-300 leading-relaxed space-y-1">
+                    <p className="font-semibold">⚠️ 注意事項：</p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-zinc-400">
+                      <li>刪除後該代碼將無法再次被兌換或恢復。</li>
+                      <li>過去已透過此代碼註冊或兌換的會員帳號權限不受影響。</li>
+                    </ul>
                   </div>
                 </div>
 
-                {/* 專屬推廣連結 */}
-                <div className="space-y-2">
-                  <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
-                    專屬分享網址（點擊後自動預填邀請碼）
-                  </label>
-                  <div className="flex gap-2.5">
-                    <input
-                      type="text"
-                      readOnly
-                      value={getShareUrl(shareModalItem)}
-                      className="w-full px-4 py-3 rounded-xl glass-input text-sm font-mono text-amber-200 bg-black/50 border border-white/15 selection:bg-amber-500/30"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(getShareUrl(shareModalItem), "modal-url")}
-                      className="px-5 py-3 rounded-xl glass-btn-primary flex items-center gap-2 text-sm shrink-0 font-bold shadow-lg cursor-pointer"
-                    >
-                      {copiedType === "modal-url" ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
-                          <span>已複製</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          <span>複製連結</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setDeletingCode(null)}
+                    disabled={isDeleting}
+                    className="px-4 py-2.5 rounded-xl glass-btn text-xs sm:text-sm font-medium text-zinc-300 hover:text-white cursor-pointer"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-red-600/30 flex items-center gap-2 disabled:opacity-50 cursor-pointer transition-colors"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>刪除中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        <span>確認刪除</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-
-                {/* 社群推廣短文 */}
-                <div className="space-y-2">
-                  <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
-                    LINE / 社群推廣短文
-                  </label>
-                  <textarea
-                    rows={4}
-                    readOnly
-                    value={getShareText(shareModalItem)}
-                    className="w-full p-4 rounded-xl glass-input text-sm text-zinc-200 bg-black/50 border border-white/15 resize-none font-sans leading-relaxed selection:bg-amber-500/30"
-                  />
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(getShareText(shareModalItem), "modal-text")}
-                      className="px-5 py-2.5 rounded-xl glass-btn flex items-center gap-2 text-sm font-semibold text-amber-300 hover:text-white border-amber-500/40 hover:bg-amber-500/10 transition-colors shadow-md cursor-pointer"
-                    >
-                      {copiedType === "modal-text" ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
-                          <span>已複製短文</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          <span>複製推廣短文</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          </div>
-        </div>
-      )}
+              </GlassCard>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
