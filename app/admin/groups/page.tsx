@@ -378,36 +378,56 @@ export default function AdminGroupsPage() {
         )}
       </GlassCard>
 
-      {/* 推廣分享彈窗 Modal */}
+      {/* 推廣分享彈窗 Modal (寬敞大字級與大縮圖) */}
       {shareGroup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg glass-panel p-6 rounded-2xl border border-white/10 shadow-2xl space-y-4 bg-zinc-950/90">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2 text-amber-400">
-                <Share2 className="w-5 h-5" />
-                <h3 className="text-base font-bold text-white">【{shareGroup.name}】公開展示推廣</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-2xl glass-panel p-6 sm:p-8 rounded-2xl border border-white/15 shadow-2xl space-y-6 bg-zinc-950/95 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3 text-amber-400">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                    【{shareGroup.name}】公開展示推廣
+                  </h3>
+                  <p className="text-xs sm:text-sm text-zinc-400">
+                    生成專屬 10 碼隨機展示連結與推廣短文
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShareGroup(null)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
+                className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              {/* 縮圖預覽 */}
+            <div className="space-y-5">
+              {/* 縮圖預覽 (大圖格狀展示) */}
               {shareGroup.thumbnails && shareGroup.thumbnails.length > 0 && (
-                <div className="space-y-1.5">
-                  <span className="text-xs text-zinc-400 flex items-center gap-1">
-                    <Film className="w-3.5 h-3.5 text-amber-400" />
-                    <span>展示頁精選縮圖預覽</span>
+                <div className="space-y-2">
+                  <span className="text-xs sm:text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                    <Film className="w-4 h-4 text-amber-400" />
+                    <span>展示頁精選縮圖預覽（自動生成 1200×630 OG 社群卡片）</span>
                   </span>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-3.5">
                     {shareGroup.thumbnails.map((thumb, idx) => (
-                      <div key={idx} className="aspect-video rounded-lg overflow-hidden bg-zinc-900 border border-white/10">
-                        <img src={thumb} alt="thumbnail preview" className="w-full h-full object-cover" />
+                      <div
+                        key={idx}
+                        className="relative aspect-video rounded-xl overflow-hidden bg-zinc-900 border border-white/15 shadow-md group/thumb"
+                      >
+                        <img
+                          src={thumb}
+                          alt="thumbnail preview"
+                          className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[10px] sm:text-xs font-mono text-zinc-300 font-semibold">
+                          #{idx + 1}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -415,19 +435,19 @@ export default function AdminGroupsPage() {
               )}
 
               {/* 選擇附帶邀請碼 */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-zinc-300">
-                  附帶邀請碼（選填，訪客點擊連結後自動預填）
+              <div className="space-y-2">
+                <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
+                  附帶邀請碼（選填，訪客點擊連結後將自動預填通行碼）
                 </label>
                 <select
                   value={selectedInviteCode}
                   onChange={(e) => setSelectedInviteCode(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs text-zinc-200 bg-zinc-900"
+                  className="w-full px-4 py-3 rounded-xl glass-input text-sm text-zinc-100 bg-zinc-900 border border-white/15 cursor-pointer"
                 >
                   <option value="">-- 純分享展示頁（不帶邀請碼） --</option>
                   {inviteCodes.map((code) => (
                     <option key={code.id} value={code.code}>
-                      {code.code} {code.autoApprove ? "⚡ 自動核准" : "（手動審核）"}{" "}
+                      【{code.code}】{code.autoApprove ? "⚡ 自動核准" : "（手動審核）"}{" "}
                       {code.description ? `— ${code.description}` : ""}
                     </option>
                   ))}
@@ -435,28 +455,30 @@ export default function AdminGroupsPage() {
               </div>
 
               {/* 分享連結 */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-zinc-300">專屬展示網址</label>
-                <div className="flex gap-2">
+              <div className="space-y-2">
+                <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
+                  專屬展示網址
+                </label>
+                <div className="flex gap-2.5">
                   <input
                     type="text"
                     readOnly
                     value={getShareUrl()}
-                    className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono text-zinc-300 bg-black/40"
+                    className="w-full px-4 py-3 rounded-xl glass-input text-sm font-mono text-amber-200 bg-black/50 border border-white/15 selection:bg-amber-500/30"
                   />
                   <button
                     type="button"
                     onClick={() => handleCopy(getShareUrl(), "url")}
-                    className="px-3 py-2 rounded-xl glass-btn-primary flex items-center gap-1.5 text-xs shrink-0 font-semibold cursor-pointer"
+                    className="px-5 py-3 rounded-xl glass-btn-primary flex items-center gap-2 text-sm shrink-0 font-bold shadow-lg cursor-pointer"
                   >
                     {copiedType === "url" ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-300" />
+                        <Check className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
                         <span>已複製</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-4 h-4" />
                         <span>複製連結</span>
                       </>
                     )}
@@ -465,28 +487,30 @@ export default function AdminGroupsPage() {
               </div>
 
               {/* LINE 短文 */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-zinc-300">LINE / 社群推廣短文</label>
+              <div className="space-y-2">
+                <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
+                  LINE / 社群推廣短文
+                </label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   readOnly
                   value={getShareText()}
-                  className="w-full p-3 rounded-xl glass-input text-xs text-zinc-300 bg-black/40 resize-none font-sans"
+                  className="w-full p-4 rounded-xl glass-input text-sm text-zinc-200 bg-black/50 border border-white/15 resize-none font-sans leading-relaxed selection:bg-amber-500/30"
                 />
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-1">
                   <button
                     type="button"
                     onClick={() => handleCopy(getShareText(), "text")}
-                    className="px-4 py-2 rounded-xl glass-btn flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-white border-amber-500/30 cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl glass-btn flex items-center gap-2 text-sm font-semibold text-amber-300 hover:text-white border-amber-500/40 hover:bg-amber-500/10 transition-colors shadow-md cursor-pointer"
                   >
                     {copiedType === "text" ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-300" />
+                        <Check className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
                         <span>已複製短文</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-4 h-4" />
                         <span>複製推廣短文</span>
                       </>
                     )}

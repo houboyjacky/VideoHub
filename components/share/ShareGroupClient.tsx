@@ -295,34 +295,44 @@ export function ShareGroupClient({
 
       {/* 已登入用戶兌換邀請碼彈窗 */}
       {redeemModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md">
-            <GlassCard className="p-6 border border-white/10 shadow-2xl space-y-4 bg-zinc-950/90">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2 text-amber-400">
-                  <KeyRound className="w-5 h-5" />
-                  <h3 className="text-base font-bold text-white">兌換通行邀請碼</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-lg">
+            <GlassCard className="p-6 sm:p-8 border border-white/15 shadow-2xl space-y-6 bg-zinc-950/95 rounded-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3 text-amber-400">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                      兌換通行邀請碼
+                    </h3>
+                    <p className="text-xs sm:text-sm text-zinc-400">
+                      解鎖【{group.name}】與專屬影音內容
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setRedeemModalOpen(false)}
-                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
+                  className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {redeemError && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-sm flex items-center gap-2.5">
+                  <AlertCircle className="w-5 h-5 shrink-0 text-red-400" />
                   <span>{redeemError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleRedeem} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-zinc-300">
-                    請輸入收到的邀請碼
+              <form onSubmit={handleRedeem} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
+                    請輸入收到的邀請通行碼
                   </label>
                   <input
                     type="text"
@@ -330,28 +340,32 @@ export function ShareGroupClient({
                     placeholder="例如：VIP-XXXXXX"
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value.trim().toUpperCase())}
-                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm font-mono uppercase tracking-wider"
+                    className="w-full px-4 py-3.5 rounded-xl glass-input text-base font-mono uppercase tracking-wider text-amber-200 bg-black/50 border border-white/15 selection:bg-amber-500/30 font-bold"
                     disabled={redeeming}
+                    autoFocus
                   />
+                  <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                    驗證成功後將立即為您的帳號開通此分組，可即刻觀看所有完整影片。
+                  </p>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
                   <button
                     type="button"
                     onClick={() => setRedeemModalOpen(false)}
-                    className="px-4 py-2 rounded-xl glass-btn text-xs font-medium text-zinc-400 hover:text-white"
+                    className="px-5 py-2.5 rounded-xl glass-btn text-sm font-medium text-zinc-300 hover:text-white cursor-pointer"
                   >
                     取消
                   </button>
                   <button
                     type="submit"
-                    disabled={redeeming}
-                    className="px-5 py-2 rounded-xl glass-btn-primary flex items-center gap-2 text-xs font-bold disabled:opacity-50"
+                    disabled={redeeming || !inviteCode.trim()}
+                    className="px-6 py-2.5 rounded-xl glass-btn-primary flex items-center gap-2 text-sm font-bold shadow-lg disabled:opacity-50 cursor-pointer"
                   >
                     {redeeming ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>兌換中...</span>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>驗證中...</span>
                       </>
                     ) : (
                       <span>立即兌換</span>

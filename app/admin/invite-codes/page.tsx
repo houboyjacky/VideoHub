@@ -494,63 +494,97 @@ export default function AdminInviteCodesPage() {
         )}
       </GlassCard>
 
-      {/* 推廣分享彈窗 */}
+      {/* 推廣分享彈窗 Modal (寬敞大字級) */}
       {shareModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-lg">
-            <GlassCard className="p-6 border border-white/10 shadow-2xl space-y-4 bg-zinc-950/90">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2 text-amber-400">
-                  <Share2 className="w-5 h-5" />
-                  <h3 className="text-base font-bold text-white">智慧邀請碼推廣分享</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <GlassCard className="p-6 sm:p-8 border border-white/15 shadow-2xl space-y-6 bg-zinc-950/95 rounded-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3 text-amber-400">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                      智慧邀請碼推廣分享
+                    </h3>
+                    <p className="text-xs sm:text-sm text-zinc-400">
+                      一鍵複製帶碼註冊網址與社群推廣文案
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShareModalItem(null)}
-                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
+                  className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="space-y-4">
-                {/* 邀請碼資訊 */}
-                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-center justify-between">
+              <div className="space-y-5">
+                {/* 邀請碼資訊 (高亮大卡片) */}
+                <div className="p-4 sm:p-5 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <span className="text-xs text-zinc-400">邀請碼</span>
-                    <div className="font-mono font-bold text-amber-300 text-base">{shareModalItem.code}</div>
+                    <span className="text-xs sm:text-sm text-zinc-400 block mb-0.5">專屬通行邀請碼</span>
+                    <div className="font-mono font-black text-amber-300 text-2xl tracking-wider">
+                      {shareModalItem.code}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-xs text-zinc-400">綁定分組</span>
-                    <div className="text-xs text-zinc-200 font-semibold">
-                      {shareModalItem.targetGroupNames?.[0] || "尚未綁定特定分組"}
+                  <div className="sm:text-right space-y-1">
+                    <span className="text-xs sm:text-sm text-zinc-400 block">綁定權限與分組</span>
+                    <div className="flex flex-wrap sm:justify-end gap-1.5 items-center">
+                      {shareModalItem.autoApprove ? (
+                        <span className="px-2.5 py-0.5 rounded-md text-xs bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
+                          ⚡ 自動開通
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-md text-xs bg-zinc-800 text-zinc-400 border border-zinc-700">
+                          手動審核
+                        </span>
+                      )}
+                      {shareModalItem.targetGroupNames && shareModalItem.targetGroupNames.length > 0 ? (
+                        shareModalItem.targetGroupNames.map((gn, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2.5 py-0.5 rounded-md text-xs bg-white/10 text-zinc-200 border border-white/15 font-semibold"
+                          >
+                            {gn}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-zinc-400">（無指定分組）</span>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* 專屬推廣連結 */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-zinc-300">專屬分享網址（自動帶碼）</label>
-                  <div className="flex gap-2">
+                <div className="space-y-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
+                    專屬分享網址（點擊後自動預填邀請碼）
+                  </label>
+                  <div className="flex gap-2.5">
                     <input
                       type="text"
                       readOnly
                       value={getShareUrl(shareModalItem)}
-                      className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono text-zinc-300 bg-black/40"
+                      className="w-full px-4 py-3 rounded-xl glass-input text-sm font-mono text-amber-200 bg-black/50 border border-white/15 selection:bg-amber-500/30"
                     />
                     <button
                       type="button"
                       onClick={() => handleCopy(getShareUrl(shareModalItem), "modal-url")}
-                      className="px-3 py-2 rounded-xl glass-btn-primary flex items-center gap-1.5 text-xs shrink-0 font-semibold"
+                      className="px-5 py-3 rounded-xl glass-btn-primary flex items-center gap-2 text-sm shrink-0 font-bold shadow-lg cursor-pointer"
                     >
                       {copiedType === "modal-url" ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-300" />
+                          <Check className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
                           <span>已複製</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="w-3.5 h-3.5" />
+                          <Copy className="w-4 h-4" />
                           <span>複製連結</span>
                         </>
                       )}
@@ -559,28 +593,30 @@ export default function AdminInviteCodesPage() {
                 </div>
 
                 {/* 社群推廣短文 */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-zinc-300">LINE / 社群推廣短文</label>
+                <div className="space-y-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-zinc-200">
+                    LINE / 社群推廣短文
+                  </label>
                   <textarea
                     rows={4}
                     readOnly
                     value={getShareText(shareModalItem)}
-                    className="w-full p-3 rounded-xl glass-input text-xs text-zinc-300 bg-black/40 resize-none font-sans"
+                    className="w-full p-4 rounded-xl glass-input text-sm text-zinc-200 bg-black/50 border border-white/15 resize-none font-sans leading-relaxed selection:bg-amber-500/30"
                   />
-                  <div className="flex justify-end">
+                  <div className="flex justify-end pt-1">
                     <button
                       type="button"
                       onClick={() => handleCopy(getShareText(shareModalItem), "modal-text")}
-                      className="px-4 py-2 rounded-xl glass-btn flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-white border-amber-500/30"
+                      className="px-5 py-2.5 rounded-xl glass-btn flex items-center gap-2 text-sm font-semibold text-amber-300 hover:text-white border-amber-500/40 hover:bg-amber-500/10 transition-colors shadow-md cursor-pointer"
                     >
                       {copiedType === "modal-text" ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-300" />
+                          <Check className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
                           <span>已複製短文</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="w-3.5 h-3.5" />
+                          <Copy className="w-4 h-4" />
                           <span>複製推廣短文</span>
                         </>
                       )}
