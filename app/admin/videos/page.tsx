@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SyncChannelCard } from "@/components/admin/SyncChannelCard";
 import { SmartDateInput } from "@/components/ui/SmartDateInput";
@@ -10,6 +11,7 @@ import {
   Plus,
   Trash2,
   Edit2,
+  Play,
   Calendar,
   Layers,
   Tag,
@@ -1097,6 +1099,18 @@ export default function AdminVideosPage() {
                         </a>
 
                         <div className="flex items-center gap-2">
+                          <Link
+                            href={`/video/${video.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 text-xs font-semibold border border-amber-500/30 transition-colors shadow-sm cursor-pointer"
+                            title="在新視窗開啟播放此影片"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current text-amber-400" />
+                            <span>播放</span>
+                          </Link>
+
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1264,6 +1278,17 @@ export default function AdminVideosPage() {
                         </a>
 
                         <div className="flex items-center gap-1.5">
+                          <Link
+                            href={`/video/${video.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-amber-500/30 transition-colors cursor-pointer shadow-sm"
+                            title="在新視窗開啟播放此影片"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                          </Link>
+
                           <button
                             type="button"
                             onClick={(e) => {
