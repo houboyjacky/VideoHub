@@ -4,6 +4,33 @@
 
 ---
 
+## [1.1.0] - 2026-08-19
+
+### 🚀 新增功能 (Features)
+- **分組隨機 10 碼短分享 ID 系統 (Random Share ID)**：
+  - 分組新增 10 碼隨機 URL-safe 識別碼（`shareId`），隱蔽 MongoDB 底層 ObjectId，支援分組公開展示頁（`/share/group/[shareId]`）與 Open Graph 社交動態預覽圖片生成（`/api/og/group/[shareId]`）。
+- **免審核邀請碼自動解鎖與歡迎信系統 (Auto-Approve & Welcome Email)**：
+  - 邀請碼支援 `autoApprove: true`，訪客或會員輸入後自動開通分組權限，並由系統即時寄送專屬 HTML 歡迎通知信。
+- **使用者個人稱呼隨時修改 (User Profile Name Update)**：
+  - 後端新增 `PATCH /api/user/profile` API，並於前端導航列頭像旁整合「✏️ 修改稱呼」彈窗，使用者可隨時自主更新顯示名稱。
+- **註冊頁智慧自動預填 (Smart Auto-Fill Registration)**：
+  - 進入 `/register` 自動預填 Google 帳號名稱，並自動解析網址 `?code=` 與 `?invite=` 參數帶入邀請碼；已核准會員進入自動導向動態牆 `/feed`。
+- **影片庫管理快速播放通道**：
+  - 影片管理列表中，編輯鉛筆旁新增「在外部新分頁播放」專屬按鈕，便於管理員即時校驗影片狀態。
+
+### 🔒 安全性與防禦加固 (Security & Hardening)
+- **邀請碼防暴力猜測與安全鎖定機制 (Rate Limiting & Anti-Brute Force)**：
+  - 整合 Session Email 與 Client IP 雙重限制，連續輸入錯誤邀請碼達 5 次立即觸發 15 分鐘安全冷卻鎖定。
+  - 對使用者維持安全簡潔提示（不透露倒數與剩餘次數），並於後台活動日誌中完整記錄鎖定與錯誤軌跡。
+- **邀請碼刪除防護規則 (Safe Delete Rules)**：
+  - 邀請碼必須處於「已停用 (disabled: true)」狀態方可執行刪除，杜絕誤刪進行中的有效邀請碼。
+- **系統活動日誌永久全量保存與資料庫直查 (Permanent Logs Retention & DB Search)**：
+  - 系統活動日誌改為永久全量保存、防清空防篡改；搜尋框升級為 350ms 防抖之資料庫級別全文模糊直查，打破 50 筆快取限制。
+- **TDD 測試日誌隔離加固 (Test Prefix Isolation & Targeted Teardown)**：
+  - 測試日誌採用嚴格前綴沙盒隔離，執行完畢 100% 精確清除假資料，絕不波及生產環境真實日誌。
+
+---
+
 ## [1.0.19] - 2026-08-18
 
 ### 🔒 安全性與權限隔離優化 (Security & Privacy)
