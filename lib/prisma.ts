@@ -167,6 +167,24 @@ const parseWhere = (where: any = {}) => {
       } else if ((val as any).not !== undefined) {
         query[key] = { $ne: (val as any).not };
       } else if (
+        (val as any).startsWith !== undefined ||
+        (val as any).endsWith !== undefined ||
+        (val as any).contains !== undefined
+      ) {
+        let pattern = "";
+        if ((val as any).startsWith !== undefined) {
+          pattern = `^${(val as any).startsWith.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`;
+        } else if ((val as any).endsWith !== undefined) {
+          pattern = `${(val as any).endsWith.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`;
+        } else if ((val as any).contains !== undefined) {
+          pattern = (val as any).contains.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        }
+        const regexObj: any = { $regex: pattern };
+        if ((val as any).mode === "insensitive") {
+          regexObj.$options = "i";
+        }
+        query[key] = regexObj;
+      } else if (
         (val as any).lt !== undefined ||
         (val as any).lte !== undefined ||
         (val as any).gt !== undefined ||
