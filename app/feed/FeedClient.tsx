@@ -18,7 +18,9 @@ import {
   Layers,
   Play,
   Tag,
+  KeyRound,
 } from "lucide-react";
+import { RedeemInviteModal } from "@/components/layout/RedeemInviteModal";
 
 interface FeedClientProps {
   initialVideos: VideoCardData[];
@@ -487,25 +489,39 @@ export function FeedClient({
         </div>
       ) : (
         /* 空狀態 */
-        <div className="glass-card rounded-2xl p-12 text-center border border-white/10 flex flex-col items-center justify-center space-y-4 my-8">
-          <div className="w-14 h-14 rounded-2xl bg-zinc-800/60 border border-white/10 flex items-center justify-center text-zinc-500">
+        <div className="glass-card rounded-2xl p-10 sm:p-12 text-center border border-white/10 flex flex-col items-center justify-center space-y-5 my-8">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-800/60 border border-white/10 flex items-center justify-center text-zinc-500 shadow-inner">
             {searchQuery || selectedTag || selectedYear || selectedGroupId ? (
-              <SearchX className="w-6 h-6 text-zinc-400" />
+              <SearchX className="w-7 h-7 text-zinc-400" />
             ) : (
-              <Film className="w-6 h-6 text-zinc-400" />
+              <Film className="w-7 h-7 text-zinc-400" />
             )}
           </div>
-          <div className="space-y-1">
-            <h3 className="text-base font-semibold text-zinc-200">
+          <div className="space-y-1.5 max-w-md">
+            <h3 className="text-lg font-bold text-zinc-100">
               {searchQuery || selectedTag || selectedYear || selectedGroupId
                 ? "沒有符合條件的影片"
-                : "目前尚無任何影片"}
+                : "目前尚無影片或尚未加入分組"}
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-500 max-w-sm">
+            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
               {searchQuery || selectedTag || selectedYear || selectedGroupId
                 ? "請嘗試更換關鍵字、清除標籤或切換至其他分組或年份查看。"
-                : "管理員尚未加入任何影片，請稍後再來查看。"}
+                : "若您收到創作者提供的邀請通行碼，請點擊下方按鈕輸入以解鎖專屬影片。"}
             </p>
+          </div>
+
+          <div className="pt-2">
+            <RedeemInviteModal
+              trigger={
+                <button
+                  type="button"
+                  className="px-6 py-3 rounded-xl glass-btn-primary flex items-center gap-2 text-sm font-bold shadow-lg shadow-amber-500/20 cursor-pointer"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  <span>輸入邀請通行碼解鎖影片</span>
+                </button>
+              }
+            />
           </div>
         </div>
       )}
