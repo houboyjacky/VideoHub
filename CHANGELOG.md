@@ -4,6 +4,20 @@
 
 ---
 
+## [1.1.15] - 2026-08-19
+
+### 📂 原始碼結構全面收納至 `src/` (Source Code Migration)
+- **原始碼集中管理 (Source Code Encapsulation)**：
+  - 將前端頁面與 API（`app/`）、UI 元件（`components/`）、DDD 領域層與用例（`lib/`）、型別定義（`types/`）以及認證與路由網關（`auth.ts`, `auth.config.ts`, `proxy.ts`）全面遷移至 `src/` 目錄中。
+- **工程與運行環境根目錄隔離 (Root Tooling Isolation)**：
+  - 根目錄專注保留工程設定檔（`package.json`, `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`, `eslint.config.mjs`, `.env.local`, `docker-compose.yml`, `Dockerfile`），結構極致整潔。
+- **路徑解析零破壞相容 (Path Alias Resolution)**：
+  - 更新 `tsconfig.json` 的路徑別名為 `"@/*": ["./src/*"]`，全站程式碼之 `@/` 引用 100% 零破壞相容。
+- **全套測試與打包驗證**：
+  - Next.js 16 (Turbopack) 零錯誤打包 32 個路由，全套 135 項單元、安全與整合測試持續 100% 綠燈通過，Docker 容器重啟後健康回應 `HTTP 200 OK`。
+
+---
+
 ## [1.1.14] - 2026-08-19
 
 ### 🏛️ DDD 領域驅動架構與全域動態設定 (DDD & System Settings)
