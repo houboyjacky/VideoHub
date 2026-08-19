@@ -1,25 +1,25 @@
-# VideoHub 部署與維護手冊
+# VideoHub (JackyStream) 部署與維護手冊
 
-本專案使用 **Docker Compose** (`network_mode: host`) 封裝 Next.js 15 Standalone 應用，並設定 `restart: unless-stopped` 達成開機自動啟動與守護，前端透過 **Nginx** 搭配 SSL 進行反向代理。
+本專案使用 **Docker Compose** 封裝 **Next.js 16 (Turbopack) Standalone** 應用，並設定 `restart: unless-stopped` 達成開機自動啟動與守護，前端透過 **Nginx** 搭配 SSL 進行反向代理。
 
 ---
 
 ## 1. 服務架構概覽
 
-```
-[使用者] 
+```text
+[使用者 / 訪客] 
    │
    ▼
 [Cloudflare CDN Proxy (Orange Cloud ☁️)] 
    │ HTTPS :443
    ▼
 [Nginx 反向代理 (SSL Termination + Security Headers)]
-   │ Proxy to http://127.0.0.1:<PORT>
+   │ Proxy to http://127.0.0.1:<PORT> (預設 26789)
    ▼
-[VideoHub Next.js Docker Container (restart: unless-stopped)]
-   │ MongoDB Client
+[VideoHub Next.js 16 Docker Container (network_mode: host / restart: unless-stopped)]
+   │ MongoDB 驅動直連 (原生原子操作)
    ▼
-[Localhost MongoDB (videohub db)]
+[MongoDB 資料庫 (本地 Port 26748 或 Docker 容器 27017)]
 ```
 
 ---
@@ -45,7 +45,7 @@ docker compose ps
 ### 查看應用程式即時日誌 (Logs)
 
 ```bash
-# 查看本地實體日誌檔案 (自動每日 Rotate 永遠保留)
+# 查看本地實體日誌檔案 (自動每日 Rotate 永遠保存)
 tail -f logs/auth.log
 tail -f logs/app.log
 tail -f logs/error.log
@@ -69,7 +69,18 @@ docker compose up -d --build
 
 ---
 
-## 4. 定期排程任務 (Cron Job)
+## 4. 🧪 容器化端到端測試 (Standalone Docker E2E)
+
+若需驗證獨立 Docker Compose（拉起獨立 MongoDB 容器模擬全新冷啟動、健康檢查與連線）：
+
+```bash
+# 執行自動化 Standalone Docker E2E 測試腳本
+./scripts/test-docker-standalone.sh
+```
+
+---
+
+## 5. 定期排程任務 (Cron Job)
 
 系統提供 API 端點每日定時同步 YouTube 全頻道最新影片與影片狀態：
 
@@ -80,7 +91,7 @@ docker compose up -d --build
 
 ---
 
-## 5. Nginx 設定維護
+## 6. Nginx 設定維護
 
 可參考本專案 `nginx/videohub.conf.sample` 範本進行設定，並 Symlink 至 `/etc/nginx/sites-available/` 與 `/etc/nginx/sites-enabled/`。
 

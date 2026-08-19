@@ -4,6 +4,19 @@
 
 ---
 
+## [1.1.17] - 2026-08-19
+
+### 📚 專案文檔與部署手冊全面更新 (Documentation & Deployment Sync)
+- **`README.md` 全面更新**：
+  - 測試數據徽章升級至 **`135/135 Passed`** (100% 綠燈)。
+  - 補齊 **DDD 5 大領域驅動架構**、**管理後台全域動態設定 (`/admin/settings`)**、**智慧邀請碼自動核准** 與 **10 碼不可預測分組展示頁** 特色說明。
+  - 專案目錄樹更新為標準 **`src/` 目錄結構**。
+- **`docs/deployment.md` 部署維護手冊升級**：
+  - 更新為 **Next.js 16 (Turbopack) Standalone** 架構說明。
+  - 新增 Standalone Docker 端到端測試腳本（`./scripts/test-docker-standalone.sh`）指令與說明。
+
+---
+
 ## [1.1.16] - 2026-08-19
 
 ### 🎨 全站動態品牌與 .env.local 完整聯動 (Dynamic Branding & Env Sync)
