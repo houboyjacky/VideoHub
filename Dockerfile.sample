@@ -1,5 +1,5 @@
-# Multi-stage Dockerfile for Next.js 15 Standalone
-FROM node:20-alpine AS base
+# Multi-stage Dockerfile for Next.js 16 Standalone
+FROM node:24.22.1-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache libc6-compat openssl
 
