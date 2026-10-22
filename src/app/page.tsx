@@ -51,35 +51,35 @@ export default async function HomePage() {
       {/* 頂部輕量導航列 */}
       <header className="w-full border-b border-white/10 bg-[#0a0a0f]/60 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             <img
               src="/logo.svg"
               alt={appName}
               width={32}
               height={32}
-              className="w-8 h-8 rounded-lg shadow-lg shadow-amber-500/20"
+              className="w-8 h-8 rounded-lg shadow-lg shadow-amber-500/20 shrink-0"
             />
-            <span className="text-lg font-bold tracking-tight text-white">
+            <span className="text-base sm:text-lg font-bold tracking-tight text-white truncate max-w-[140px] xs:max-w-[180px] sm:max-w-none">
               {appName}
             </span>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <Link
               href="/about"
-              className="text-xs text-zinc-300 hover:text-amber-300 transition-colors font-medium hidden sm:inline"
+              className="text-xs text-zinc-300 hover:text-amber-300 transition-colors font-medium hidden md:inline whitespace-nowrap"
             >
               應用程式與 API 說明
             </Link>
             <Link
               href="/privacy"
-              className="text-xs text-zinc-400 hover:text-white transition-colors"
+              className="text-xs text-zinc-400 hover:text-white transition-colors hidden sm:inline whitespace-nowrap"
             >
               隱私權政策
             </Link>
             <Link
               href="/terms"
-              className="text-xs text-zinc-400 hover:text-white transition-colors"
+              className="text-xs text-zinc-400 hover:text-white transition-colors hidden sm:inline whitespace-nowrap"
             >
               服務條款
             </Link>
@@ -93,9 +93,9 @@ export default async function HomePage() {
             >
               <button
                 type="submit"
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white text-zinc-900 hover:bg-zinc-100 text-xs font-semibold transition-all shadow-md hover:shadow-amber-500/20 hover:scale-[1.02]"
+                className="flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl bg-white text-zinc-900 hover:bg-zinc-100 text-xs font-semibold transition-all shadow-md hover:shadow-amber-500/20 hover:scale-[1.02] whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -148,18 +148,19 @@ export default async function HomePage() {
             </div>
 
             {/* 行動呼籲按鈕組 */}
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4 max-w-md sm:max-w-none mx-auto">
               <form
                 action={async () => {
                   "use server";
                   await signIn("google", { redirectTo: "/feed" });
                 }}
+                className="w-full sm:w-auto"
               >
                 <button
                   type="submit"
-                  className="flex items-center gap-3 px-6 py-3.5 rounded-xl bg-white text-zinc-900 hover:bg-zinc-100 font-semibold text-sm transition-all duration-300 shadow-xl hover:shadow-amber-500/10 hover:-translate-y-0.5"
+                  className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-white text-zinc-900 hover:bg-zinc-100 font-semibold text-sm transition-all duration-300 shadow-xl hover:shadow-amber-500/10 hover:-translate-y-0.5 cursor-pointer whitespace-nowrap"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -183,10 +184,10 @@ export default async function HomePage() {
 
               <Link
                 href="/about"
-                className="flex items-center gap-2 px-5 py-3.5 rounded-xl glass-btn text-xs sm:text-sm font-semibold text-zinc-200 hover:text-white hover:border-amber-500/40 transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl glass-btn text-xs sm:text-sm font-semibold text-zinc-200 hover:text-white hover:border-amber-500/40 transition-all whitespace-nowrap"
               >
                 <span>應用程式與 API 政策說明</span>
-                <ExternalLink className="w-4 h-4 text-amber-400" />
+                <ExternalLink className="w-4 h-4 text-amber-400 shrink-0" />
               </Link>
             </div>
           </div>

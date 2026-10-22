@@ -195,11 +195,11 @@ export function RedeemInviteModal({ trigger, defaultOpen = false }: RedeemInvite
             setError(null);
             setSuccess(null);
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-amber-300 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium text-amber-300 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
           title="輸入邀請碼解鎖更多專屬分組"
         >
-          <KeyRound className="w-3.5 h-3.5" />
-          <span>輸入邀請碼</span>
+          <KeyRound className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="hidden sm:inline">輸入邀請碼</span>
         </button>
       )}
 
