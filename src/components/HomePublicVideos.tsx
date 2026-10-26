@@ -75,6 +75,7 @@ export function HomePublicVideos({ videos = [] }: { videos: PublicVideo[] }) {
     const dateObj = rawDate ? new Date(rawDate) : null;
     const displayDate = dateObj
       ? dateObj.toLocaleDateString("zh-TW", {
+          timeZone: "Asia/Taipei",
           year: "numeric",
           month: "2-digit",
           day: "2-digit",
